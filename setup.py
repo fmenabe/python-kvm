@@ -6,7 +6,7 @@ setup (
     version='0.1',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
-    packages=['kvm'],
+    py_modules=['kvm'],
     licence='LICENCE.txt',
     description='An API for managing KVM host.',
     long_description=open('README.txt').read(),
