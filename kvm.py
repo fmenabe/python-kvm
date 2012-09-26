@@ -5,6 +5,44 @@ import string
 from xml.dom.minidom import Document, Element, parseString
 import unix.hosts as unix
 
+
+################################################################################
+########                    Hacks for XML fromatting                    ########
+################################################################################
+def writexml_document(self, writer, indent="", addindent="", newl=""):
+    for node in self.childNodes:
+        node.writexml(writer, indent, addindent, newl)
+
+
+def writexml_element(self, writer, indent="", addindent="", newl=""):
+    writer.write(newl + indent+"<" + self.tagName)
+
+    attrs = self._get_attributes()
+    a_names = attrs.keys()
+    a_names.sort()
+
+    onetextnode = False
+    for a_name in a_names:
+        writer.write(" %s=\"" % a_name)
+        _write_data(writer, attrs[a_name].value)
+        writer.write("\"")
+    if self.childNodes:
+        writer.write(">")
+        lastnodetype=self.childNodes[0].nodeType
+        for node in self.childNodes:
+            if lastnodetype==node.TEXT_NODE:
+                node.writexml(writer,"","","")
+            else:
+                node.writexml(writer, ("%s%s") % (indent,addindent), addindent, newl)
+            lastnodetype=node.nodeType
+        if lastnodetype==node.TEXT_NODE:
+            writer.write("</%s>" % (self.tagName))
+        else:
+            writer.write("%s%s</%s>" % (newl,indent,self.tagName))
+    else:
+        writer.write("/>")
+################################################################################
+
 LANGUAGE = 'en_US.UTF-8'
 RUNNING = 'running'
 IDLE = 'idle'
@@ -212,8 +250,109 @@ class KVM(object):
         }
 
 
-    def gen_conf(self, conf_file, vm, cores=2, mem=2, **params):
-        pass
+    def __node(self, name, attrs={}, text='', childs=[]):
+        node = self.xml.createElement(name)
+        for attr_name, attr_value in attrs.iteritems():
+            node.setAttribute(attr_name, attr_value)
+        if text:
+            node.appendChild(self.xml.createTextNode(text))
+        if childs:
+            for child_node in childs:
+                node.appendChild(child_node)
+        return node
+
+
+    def _gen_devices_config(self, disks, interfaces):
+        devices_nodes = [self.node('emulator', text='/usr/bin/kvm')]
+
+        # Add disks.
+        devices_nodes.extend(
+            (
+                self.node('disk', {'type': 'file', 'device': 'disk'}, childs=(
+                    self.node('driver', {'name': 'qemu', 'type': disk['type']}),
+                    self.node('source', {'file': disk_path}),
+                    self.node('target', {'dev': disk['device'], 'bus': disk['driver']})
+                ))
+            ) for disk_path, disk in disks.iteritems()
+        )
+
+        # Add interfaces.
+        devices_nodes.extend(
+            (
+                self.node('interfaces', {'type': 'bridge'}, childs=(
+                    self.node('mac', {'address': mac}),
+                    self.node('source', {'bridge': 'br%s' % interface['vlan']}),
+                    self.node('model', {'type': interface['driver']}),
+                )
+            ) for mac, interface in interfaces.iteritems()
+        )
+
+        # Add other devices.
+        devices_nodes.extend((
+            self.node('serial', {'type': 'pty'}, childs=(
+                self.node('target', {'port': '0'}),
+            )),
+            self.node('console', {'type': 'pty'}, childs=(
+                self.node('target', {'port': '0'}),
+            )),
+            self.node('input', {'type': 'mouse', 'bus': 'ps2'}),
+            self.node('graphics', {
+                'type': 'vnc',
+                'port': '-1',
+                'autoport': 'yes',
+                'keymap': 'fr'}
+            ),
+            self.node('sound', {'model': 'es1370'}),
+            self.node('video', childs=(
+                self.node('model', {'type': 'cirrus', 'vram': '9216', 'heads': '1'}),
+            )
+        )))
+        return devices_nodes
+
+
+    def gen_conf(self, conf_file, **params):
+        # Hack for not printing xml version
+        Document.writexml = writexml_document
+
+        # Hack for XML output: text node on one line
+        Element.writexml = writexml_element
+
+        self.xml = Document()
+        memory_value = str(int(float(self.memory) * 1024 * 1024))
+
+        config = self.__node('domain', {'type': 'kvm'}, childs=(
+            self.__node('name', text=params['name']),
+            self.__node('uuid', text=params['uuid']),
+            self.__node('memory', text=params['memory_max']),
+            self.__node('currentMemory', text=params['memory']),
+            self.__node('vcpu', text=str(params['cores'])),
+            self.__node('os', childs=(
+                self.__node('type', {
+                    'arch': 'x86_64',
+#                    'machine': 'pc-0.11'
+                }, 'hvm'),
+                self.__node('boot', {'dev': 'hd'})
+            )),
+            self.__node('features', childs=(
+                self.__node('acpi'),
+                self.__node('apic'),
+                self.__node('pae')
+            )),
+            self.__node('clock', {'offset': 'utc'}),
+            self.__node('on_poweroff', text='destroy'),
+            self.__node('on_reboot', text='restart'),
+            self.__node('on_crash', text='restart'),
+            self.__node('devices', childs=self._gen_devices_config(
+                params['disks'],
+                params['interfaces'])
+            )
+        ))
+
+        filepath = path if path else self.conf_file
+        return self.parent.write(
+            filepath,
+            '\n'.join(config.toprettyxml(indent='  ').split('\n')[1:])
+        )
 
 
     def parse_conf(self, conf_file):
