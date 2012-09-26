@@ -41,7 +41,6 @@ def writexml_element(self, writer, indent="", addindent="", newl=""):
             writer.write("%s%s</%s>" % (newl,indent,self.tagName))
     else:
         writer.write("/>")
-################################################################################
 
 LANGUAGE = 'en_US.UTF-8'
 RUNNING = 'running'
@@ -283,8 +282,9 @@ class KVM(object):
                     self.node('mac', {'address': mac}),
                     self.node('source', {'bridge': 'br%s' % interface['vlan']}),
                     self.node('model', {'type': interface['driver']}),
-                )
-            ) for mac, interface in interfaces.iteritems()
+                ))
+                for mac, interface in interfaces.iteritems()
+            )
         )
 
         # Add other devices.
