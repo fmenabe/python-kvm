@@ -51,7 +51,7 @@ SHUTOFF = 'shut off'
 CRASHED = 'crashed'
 DYING = 'dying'
 
-SIZE_REGEXP = re.compile('.*virtual size: [0-9]*G \(([0-9]*) bytes\).*')
+SIZE_REGEXP = re.compile('.*virtual size: [0-9.]*G \(([0-9]*) bytes\).*')
 UNKNOWN_CMD_REGEXP = re.compile("error: unknown command: '(.*)'")
 BAD_OPTION_REGEXP = re.compile("error: command '(.*)' doesn't support option '(.*)'")
 
@@ -357,3 +357,4 @@ class KVM(object):
 
     def parse_conf(self, conf_file):
         pass
+
