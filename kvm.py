@@ -394,5 +394,9 @@ class KVM(object):
         )
 
 
-    def parse_conf(self, conf_file):
-        pass
+    def vms_conf(self):
+        vms_conf = {}
+        for vm in self.list():
+            vms_conf.setdefault(vm, self.conf(vm))
+        return vms_conf
+
