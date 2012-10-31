@@ -358,13 +358,13 @@ class KVM(object):
         Element.writexml = writexml_element
 
         self.xml = Document()
-        memory = int(float(params['memory']) * 1024 * 1024)
+#        memory = int(float(params['memory']) * 1024 * 1024)
 
         config = self.__node('domain', {'type': 'kvm'}, childs=(
             self.__node('name', text=params['name']),
             self.__node('uuid', text=params['uuid']),
-            self.__node('memory', text=memory),
-            self.__node('currentMemory', text=memory),
+            self.__node('memory', text=params['memory']),
+            self.__node('currentMemory', text=params['memory']),
             self.__node('vcpu', text=params['cores']),
             self.__node('os', childs=(
                 self.__node('type', {
