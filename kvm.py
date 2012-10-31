@@ -77,6 +77,9 @@ def gen_mac():
         ''.join([random.choice(CHOICES) for i in xrange(0, 2)])
     ))
 
+class TimeoutException(Exception):
+    pass
+
 
 class KVMError(Exception):
     pass
@@ -141,11 +144,11 @@ class KVM(object):
         signal.alarm(timeout)
 
         try:
-            while self.state() != SHUTOFF:
+            while self.state(vm) != SHUTOFF:
                 pass
         except TimeoutException:
             if force:
-                status, stdout,stderr = self.virsh('destroy')
+                status, stdout,stderr = self.destroy(vm)
                 stderr = 'VM has been destroy after %ss' % timeout
                 return (status, stdout, stderr)
             else:
