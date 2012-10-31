@@ -260,7 +260,10 @@ class KVM(object):
             if disk_node.getAttribute('device') == 'disk'
         ))
         for disk_path in disks:
-            disks[disk_path].setdefault('size', self.img_size(disk_path))
+            try:
+                disks[disk_path].setdefault('size', self.img_size(disk_path))
+            except OSError:
+                disks[disk_path].setdefault('size', 0)
 
         interfaces = dict((
             (
