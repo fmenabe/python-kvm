@@ -294,7 +294,7 @@ class KVM(object):
         for attr_name, attr_value in attrs.iteritems():
             node.setAttribute(attr_name, attr_value)
         if text:
-            node.appendChild(self.xml.createTextNode(text))
+            node.appendChild(self.xml.createTextNode(str(text)))
         if childs:
             for child_node in childs:
                 node.appendChild(child_node)
@@ -302,55 +302,55 @@ class KVM(object):
 
 
     def _gen_devices_config(self, disks, interfaces):
-        devices_nodes = [self.node('emulator', text='/usr/bin/kvm')]
+        devices_nodes = [self.__node('emulator', text='/usr/bin/kvm')]
 
         # Add disks.
         devices_nodes.extend(
             (
-                self.node('disk', {'type': 'file', 'device': 'disk'}, childs=(
-                    self.node('driver', {'name': 'qemu', 'type': disk['type']}),
-                    self.node('source', {'file': disk_path}),
-                    self.node('target', {'dev': disk['device'], 'bus': disk['driver']})
+                self.__node('disk', {'type': 'file', 'device': 'disk'}, childs=(
+                    self.__node('driver', {'name': 'qemu', 'type': disk['format']}),
+                    self.__node('source', {'file': disk['path']}),
+                    self.__node('target', {'dev': disk['device'], 'bus': disk['driver']})
                 ))
-            ) for disk_path, disk in disks.iteritems()
+            ) for disk in disks
         )
 
         # Add interfaces.
         devices_nodes.extend(
             (
-                self.node('interfaces', {'type': 'bridge'}, childs=(
-                    self.node('mac', {'address': mac}),
-                    self.node('source', {'bridge': 'br%s' % interface['vlan']}),
-                    self.node('model', {'type': interface['driver']}),
+                self.__node('interface', {'type': 'bridge'}, childs=(
+                    self.__node('mac', {'address': interface['mac']}),
+                    self.__node('source', {'bridge': 'br%s' % interface['vlan']}),
+                    self.__node('model', {'type': interface['driver']}),
                 ))
-                for mac, interface in interfaces.iteritems()
+                for interface in interfaces
             )
         )
 
         # Add other devices.
         devices_nodes.extend((
-            self.node('serial', {'type': 'pty'}, childs=(
-                self.node('target', {'port': '0'}),
+            self.__node('serial', {'type': 'pty'}, childs=(
+                self.__node('target', {'port': '0'}),
             )),
-            self.node('console', {'type': 'pty'}, childs=(
-                self.node('target', {'port': '0'}),
+            self.__node('console', {'type': 'pty'}, childs=(
+                self.__node('target', {'port': '0'}),
             )),
-            self.node('input', {'type': 'mouse', 'bus': 'ps2'}),
-            self.node('graphics', {
+            self.__node('input', {'type': 'mouse', 'bus': 'ps2'}),
+            self.__node('graphics', {
                 'type': 'vnc',
                 'port': '-1',
                 'autoport': 'yes',
                 'keymap': 'fr'}
             ),
-            self.node('sound', {'model': 'es1370'}),
-            self.node('video', childs=(
-                self.node('model', {'type': 'cirrus', 'vram': '9216', 'heads': '1'}),
+            self.__node('sound', {'model': 'es1370'}),
+            self.__node('video', childs=(
+                self.__node('model', {'type': 'cirrus', 'vram': '9216', 'heads': '1'}),
             )
         )))
         return devices_nodes
 
 
-    def gen_conf(self, conf_file, **params):
+    def gen_conf(self, conf_file, params):
         # Hack for not printing xml version
         Document.writexml = writexml_document
 
@@ -358,14 +358,14 @@ class KVM(object):
         Element.writexml = writexml_element
 
         self.xml = Document()
-        memory_value = str(int(float(self.memory) * 1024 * 1024))
+        memory = int(float(params['memory']) * 1024 * 1024)
 
         config = self.__node('domain', {'type': 'kvm'}, childs=(
             self.__node('name', text=params['name']),
             self.__node('uuid', text=params['uuid']),
-            self.__node('memory', text=params['memory_max']),
-            self.__node('currentMemory', text=params['memory']),
-            self.__node('vcpu', text=str(params['cores'])),
+            self.__node('memory', text=memory),
+            self.__node('currentMemory', text=memory),
+            self.__node('vcpu', text=params['cores']),
             self.__node('os', childs=(
                 self.__node('type', {
                     'arch': 'x86_64',
