@@ -384,13 +384,12 @@ class KVM(object):
             self.__node('on_crash', text='restart'),
             self.__node('devices', childs=self._gen_devices_config(
                 params['disks'],
-                params['interfaces'])
-            )
+                params['interfaces']
+            ))
         ))
 
-        filepath = path if path else self.conf_file
-        return self.parent.write(
-            filepath,
+        return self.host.write(
+            conf_file,
             '\n'.join(config.toprettyxml(indent='  ').split('\n')[1:])
         )
 
