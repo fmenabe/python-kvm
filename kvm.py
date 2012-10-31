@@ -400,3 +400,69 @@ class KVM(object):
             vms_conf.setdefault(vm, self.conf(vm))
         return vms_conf
 
+
+    def mount(self, vgroot, lvroot, path):
+        # Load root Volume Group.
+        output = self.host.execute("vgchange -ay %s" % vgroot)
+        if not output[0]:
+            output[2] = "Unable to load root Volume Group: %s" % output[2]
+            return output
+
+        # Create mount point.
+        if not self.host.exists(path):
+            output = self.host.mkdir(path, True)
+            if not output[0]:
+                output[2] = "Unable to create mount point: %s" % output[2]
+                return output
+
+        # Mount root partition
+        output = self.host.execute(
+            "mount /dev/%s/%s %s" % (vgroot, lvroot, path)
+        )
+        if not output[0]:
+            output[2] = "Unable to mount root partition: %s" % output[2]
+            return output
+        self.mounted = [path]
+
+        # Read fstab
+        try:
+            lines = self.host.readlines(os.path.join(path, 'etc', 'fstab'))
+        except OSError, os_err:
+            return (False, "", "Unable to read fstab: %s" % output[2])
+
+        for line in lines:
+            if \
+            line.find('/dev/mapper') == -1 or \
+            line.find('/dev/mapper/%s-%s' % (vgroot, lvroot)) != -1 or \
+            line.find('swap') != -1:
+                continue
+            dev, partition = line.split()[:2]
+            mount_point = os.path.join(path, partition[1:])
+            output = self.host.execute("mount %s %s" % (dev, mount_point))
+            if not output[0]:
+                output[2] = "Unable to mount '%s' partition: %s" % (partition, output[2])
+                return output
+            self.mounted.append(mount_point)
+        return (True, "", "")
+
+
+    def umount(self, vgroot):
+        if not self.mounted:
+            return (True, "", "Nothing was mounted")
+
+        mounted = list(self.mounted)
+        for mount in reversed(mounted):
+            output = self.host.execute("umount %s" % mount)
+            if not output[0]:
+                output[2] = "Unable to umount '%s': %s" % (mount, output[2])
+                return output
+            self.mounted.remove(mount)
+
+        output = self.host.execute("vgchange -an %s" % vgroot)
+        if not output[0]:
+            output[2] = "Unable to unload root Volume Group: %s" % output[2]
+        return output
+
+
+
+
