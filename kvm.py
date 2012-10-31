@@ -247,35 +247,31 @@ class KVM(object):
         xml_conf = self.virsh('dumpxml', vm)[1]
         dom = parseString(xml_conf)
 
-        disks = dict((
-            (
-                self.__xml_attr(disk_node, 'source', 'file'),
-                {
-                    'type': self.__xml_attr(disk_node, 'driver', 'type'),
-                    'driver': self.__xml_attr(disk_node, 'target', 'bus'),
-                    'device': self.__xml_attr(disk_node, 'target', 'dev')
-                }
-            ) \
+        disks = [
+            {
+                'path': self.__xml_attr(disk_node, 'source', 'file'),
+                'type': self.__xml_attr(disk_node, 'driver', 'type'),
+                'driver': self.__xml_attr(disk_node, 'target', 'bus'),
+                'device': self.__xml_attr(disk_node, 'target', 'dev')
+            }
             for disk_node in dom.getElementsByTagName('disk') \
             if disk_node.getAttribute('device') == 'disk'
-        ))
-        for disk_path in disks:
+        ]
+        for index, disk in enumerate(disks):
             try:
-                disks[disk_path].setdefault('size', self.img_size(disk_path))
+                disks[index]['size'] = self.img_size(disk['path'])
             except OSError:
-                disks[disk_path].setdefault('size', 0)
+                disks[index]['size'] = 0
 
-        interfaces = dict((
-            (
-                self.__xml_attr(int_node, 'mac', 'address'),
-                {
-                    'vlan': self.__xml_attr(int_node, 'source', 'bridge'),
-                    'interface': self.__xml_attr(int_node, 'target', 'dev'),
-                    'driver': self.__xml_attr(int_node, 'model', 'type')
-                }
-            ) for int_node in dom.getElementsByTagName('interface')
-        ))
-
+        interfaces = [
+            {
+                'mac': self.__xml_attr(int_node, 'mac', 'address'),
+                'vlan': self.__xml_attr(int_node, 'source', 'bridge'),
+                'interface': self.__xml_attr(int_node, 'target', 'dev'),
+                'driver': self.__xml_attr(int_node, 'model', 'type')
+            }
+            for int_node in dom.getElementsByTagName('interface')
+        ]
 
         return {
             'pc': self.__xml_attr(dom.getElementsByTagName('os')[0], 'type', 'machine'),
