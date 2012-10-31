@@ -2,6 +2,7 @@ import os
 import re
 import random
 import string
+import time
 import signal
 from xml.dom.minidom import Document, Element, parseString
 from xml.dom.minidom import _write_data
@@ -182,11 +183,13 @@ class KVM(object):
             "%s qemu+ssh://%s/system" % (vm, dst)
         ))
 
+
     def img_size(self, img_path):
         if not self.host.exists(img_path):
             raise OSError("file '%s' not exists" % img_path)
         stdout = self.host.execute('qemu-img info %s' % img_path)[1]
         return int(SIZE_REGEXP.search(stdout).group(1))
+
 
     def img_create(self, img_path, format, size):
         return self.host.execute('qemu-img create -f %s %s %sG' % (
@@ -194,8 +197,37 @@ class KVM(object):
         ))
 
 
-    def img_convert(self, img_path, format, options):
-        pass
+    def img_convert(self, format, src_path, dst_path, delete=False):
+        output = self.host.execute("qemu-img convert -O %s %s %s" % (
+            format,
+            src_path,
+            dst_path
+        ))
+        if not delete or not output:
+            return output
+
+        return self.host.rm(src_path)
+
+
+    def img_resize(self, path, new_size):
+        return self.host.execute(
+            "qemu-img resize %s %sG" % (path, new_size)
+        )
+
+
+    def img_load(self, path, nbd='/dev/nbd0'):
+        if not self.host.loaded('nbd'):
+            output = self.host.load('nbd')
+            if not output[0]:
+                return output
+
+        output = self.host.execute("qemu-nbd -c %s %s" % (nbd, path))
+        time.sleep(2)
+        return output
+
+
+    def img_unload(self, nbd='/dev/nbd0'):
+        return self.host.execute("qemu-nbd -d %s" % nbd)
 
 
     def __xml_value(self, elt, tag):
