@@ -462,7 +462,3 @@ class KVM(object):
         if not output[0]:
             output[2] = "Unable to unload root Volume Group: %s" % output[2]
         return output
-
-
-
-
