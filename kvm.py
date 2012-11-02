@@ -188,7 +188,7 @@ class KVM(object):
         if not self.host.exists(img_path):
             raise OSError("file '%s' not exists" % img_path)
         stdout = self.host.execute('qemu-img info %s' % img_path)[1]
-        return int(SIZE_REGEXP.search(stdout).group(1))
+        return int(SIZE_REGEXP.search(stdout).group(1)) / 1024
 
 
     def img_create(self, img_path, format, size):
