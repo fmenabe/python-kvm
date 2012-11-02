@@ -250,7 +250,7 @@ class KVM(object):
         disks = [
             {
                 'path': self.__xml_attr(disk_node, 'source', 'file'),
-                'type': self.__xml_attr(disk_node, 'driver', 'type'),
+                'format': self.__xml_attr(disk_node, 'driver', 'type'),
                 'driver': self.__xml_attr(disk_node, 'target', 'bus'),
                 'device': self.__xml_attr(disk_node, 'target', 'dev')
             }
