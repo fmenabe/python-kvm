@@ -86,10 +86,6 @@ class KVMError(Exception):
     pass
 
 
-class TimeoutExecption(Exception):
-    pass
-
-
 class KVM(object):
     def __init__(self, host, username='root', password='', timeout=10, ipv6=False):
         self.host = unix.RemoteHost()
