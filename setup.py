@@ -9,7 +9,7 @@ setup (
     py_modules=['kvm'],
     licence='LICENCE.txt',
     description='An API for managing KVM host.',
-    long_description=open('README.txt').read(),
+    long_description=open('README.md').read(),
     install_requires=[
         'unix'
     ],
