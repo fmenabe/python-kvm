@@ -1,7 +1,7 @@
 The purpose of this module is to manage KVM hosts (starting/stopping/destroying VM, createing/resizing disks, ...). It is just the definition of many basic commands of 'virsh' and 'qemu'. It use the module 'python-unix' and class decorators for flexibility and simplicity.
 
 Better explications are examples ^^:
-
+```
   >>> import unix
   >>> import kvm
   >>> # KVM on localhost
@@ -28,3 +28,4 @@ Better explications are examples ^^:
   >>> kvm_host.state('vm10')
   >>>  'running'
   >>> ...
+```
