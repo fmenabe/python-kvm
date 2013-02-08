@@ -113,7 +113,7 @@ def KVM(host):
         def vms(self):
             return [
                 vm.split()[1] \
-                for vm in self.virsh('list', '--all')[1].split('\n')[2:-2]
+                for vm in self.virsh('list', '--all')[1].split('\n')[2:-1]
             ]
 
 
