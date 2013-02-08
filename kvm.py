@@ -148,7 +148,8 @@ def KVM(host):
             except TimeoutException:
                 if force:
                     status, stdout,stderr = self.destroy(vm)
-                    stderr = 'VM has been destroy after %ss' % timeout
+                    if status:
+                        stderr = 'VM has been destroy after %ss' % timeout
                     return (status, stdout, stderr)
                 else:
                     return (False, '', 'VM not stopping after %ss' % timeout)
