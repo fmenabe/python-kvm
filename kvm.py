@@ -8,7 +8,6 @@ from xml.dom.minidom import Document, Element, parseString
 from xml.dom.minidom import _write_data
 import unix
 
-
 ################################################################################
 ########                    Hacks for XML fromatting                    ########
 ################################################################################
@@ -163,7 +162,10 @@ def KVM(host):
         def destroy(self, vm):
             return self.virsh('destroy', vm)
 
-
+	def restore(self, vm, src):
+	    return self.virsh('restore', src)
+	def save(self, vm, dst):
+	    return self.virsh('save', ''.join("%s %s" %(vm, dst)))
         def define(self, conf_file):
             return self.virsh('define', conf_file)
 
