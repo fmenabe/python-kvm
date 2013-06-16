@@ -130,6 +130,8 @@ def KVM(host):
         def start(self, vm):
             return self.virsh('start', vm)
 
+	def reboot(self, vm):
+	    return self.virsh('reboot', vm)
 
         def stop(self, vm, timeout=30, force=False):
             output = self.virsh('shutdown', vm)
