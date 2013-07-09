@@ -130,8 +130,10 @@ def KVM(host):
         def start(self, vm):
             return self.virsh('start', vm)
 
-	def reboot(self, vm):
-	    return self.virsh('reboot', vm)
+
+        def reboot(self, vm):
+            return self.virsh('reboot', vm)
+
 
         def stop(self, vm, timeout=30, force=False):
             output = self.virsh('shutdown', vm)
@@ -164,10 +166,15 @@ def KVM(host):
         def destroy(self, vm):
             return self.virsh('destroy', vm)
 
-	def restore(self, vm, src):
-	    return self.virsh('restore', src)
-	def save(self, vm, dst):
-	    return self.virsh('save', ''.join("%s %s" %(vm, dst)))
+
+        def restore(self, vm, src):
+            return self.virsh('restore', src)
+
+
+        def save(self, vm, dst):
+            return self.virsh('save', ''.join("%s %s" %(vm, dst)))
+
+
         def define(self, conf_file):
             return self.virsh('define', conf_file)
 
