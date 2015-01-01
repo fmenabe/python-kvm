@@ -4,7 +4,9 @@ import os
 import re
 import random
 import string
+import weakref
 import unix
+from lxml import etree
 
 import sys
 SELF = sys.modules[__name__]
@@ -16,6 +18,22 @@ unix.CONTROLS.update(CONTROLS)
 
 # Characters in generating strings.
 _CHOICES = string.ascii_letters[:6] + string.digits
+
+MAPPING = {'hypervisor': {'version': {'type': 'dict'},
+                          'sysinfo': {'type': 'dict'},
+                          'nodeinfo': {'type': 'dict'},
+                          'nodecpumap': {'type': 'dict'},
+                          'nodecpustats': {'type': 'dict'},
+                          'nodememstats': {'type': 'dict'},
+                          'nodesuspend': {'type': 'none'},
+                          'node_memory_tune': {'type': 'none'},
+                          'capabilities': {'type': 'xml',
+                                           'key': 'capabilities'},
+                          'domcapabilities': {'type': 'xml',
+                                              'key': 'domainCapabilities'},
+                          'freecell': {'type': 'dict'},
+                          'freepages': {'type': 'dict'},
+                          'allocpages': {'type': 'none'}}}
 
 
 #
@@ -36,6 +54,63 @@ def gen_mac():
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)]),
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)]),
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)])))
+
+
+def _xml_to_dict(elt):
+    """Recursive function that transform an XML element to a dictionnary.
+    **elt** must be of type ``lxml.etree.Element``."""
+    tag = elt.tag
+    attrs = elt.items()
+    text = elt.text.strip() if elt.text else None
+    childs = elt.getchildren()
+
+    if not attrs and not childs and not text:
+        return {tag: True}
+    elif not attrs and not childs and text:
+        return {tag: text}
+    elif attrs and not childs:
+        child = {'@%s' % attr: value for attr, value in attrs}
+        if text:
+            child['#text'] = text
+        return {tag: child}
+    elif childs:
+        elts = {'@%s' % attr: value for attr, value in attrs} if attrs else {}
+        for child in childs:
+            child = _xml_to_dict(child)
+            child_tag = list(child.keys())[0]
+            if child_tag  in elts:
+                if not isinstance(elts[child_tag], list):
+                    elts[child_tag] = [elts[child_tag]]
+                elts[child_tag].append(child[child_tag])
+            else:
+                elts.update(child)
+        return {tag: elts}
+
+
+def __str_to_dict(string):
+    def format_key(key):
+        return (key.strip().lower()
+                   .replace(' ', '_').replace('(', '').replace(')', ''))
+    return {format_key(key): (value or '').strip()
+            for line in string if line
+            for key, value in [line.split(':')]}
+
+
+def __add_method(obj, method, conf):
+    def dict_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            return __str_to_dict(self._host.virsh(method, *args, **kwargs))
+
+    def none_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            stdout = self._host.virsh(method, *args, **kwargs)
+
+    def xml_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            xml = '\n'.join(self._host.virsh(method, *args, **kwargs))
+        return _xml_to_dict(etree.fromstring(xml))[conf['key']]
+
+    setattr(obj, method, locals()['%s_method' % conf['type']])
 
 
 #
@@ -82,4 +157,17 @@ def Hypervisor(host):
                 else:
                     return stdout.splitlines()[:-1]
 
+
+        @property
+        def hypervisor(self):
+            return _Hypervisor(weakref.ref(self)())
+
     return Hypervisor()
+
+
+class _Hypervisor(object):
+    def __init__(self, host):
+        self._host = host
+
+for mname, mconf in MAPPING['hypervisor'].items():
+    __add_method(_Hypervisor, mname, mconf)
