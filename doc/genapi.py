@@ -3,6 +3,7 @@ sys.path.append('..')
 import unix
 import kvm
 import inspect
+from inspect import cleandoc
 from textwrap import dedent
 from jinja2 import Environment, PackageLoader
 
@@ -21,7 +22,7 @@ def params(obj, method, prefix=''):
                             inspect.signature(obj))
 
     # Format docstring.
-    doc = inspect.cleandoc(obj.__doc__ or '*NOT DOCUMENTED*')
+    doc = cleandoc(obj.__doc__ or '*NOT DOCUMENTED*')
     return {'signature': signature, 'doc': doc}
 
 
@@ -32,11 +33,13 @@ def main():
     # Add methods.
     docstrings.update(**{method: params(kvm, method) for method in METHODS})
 
+    # Add exceptions.
+    docstrings.update(KvmError=cleandoc(getattr(kvm, 'KvmError').__doc__))
 
     hypervisor = kvm.Hypervisor(unix.Local())
 
     # Add Hypervisor methods.
-    hypervisor_docstrings = {'doc': hypervisor.__doc__}
+    hypervisor_docstrings = {'doc': cleandoc(hypervisor.__doc__)}
     hypervisor_docstrings.update(**{method: params(hypervisor, method, PREFIX)
                                     for method in OBJ_METHODS})
 

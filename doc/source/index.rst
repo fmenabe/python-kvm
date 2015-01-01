@@ -10,6 +10,7 @@ Welcome to kvm's documentation!
    :maxdepth: 3
 
     Overview <overview>
+    API <api>
 
 Indices and tables
 ==================

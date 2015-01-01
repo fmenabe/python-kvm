@@ -6,8 +6,8 @@ This module aims to manage KVM hypervisors. For this it use the
 `unix module <https://github.com/fmenabe/python-unix>`_ which allow to manage
 Unix-like systems, both locally and remotely, in the same by overloading class
 instances. This module is just a wrapper to the ``virsh`` command. It parse
-outputs of ``virsh command`` (both XML and text). Commands are grouped in childs
-objects accessible via properties.
+outputs of the ``virsh`` command (both XML and text). Commands are grouped in
+childs objects accessible via properties.
 
 
 Installation

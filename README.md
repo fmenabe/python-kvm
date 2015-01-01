@@ -5,12 +5,11 @@ This module aims to manage KVM hypervisors. For this it use the
 `unix module <https://github.com/fmenabe/python-unix>`_ which allow to manage
 Unix-like systems, both locally and remotely, in the same by overloading class
 instances. This module is just a wrapper to the ``virsh`` command. It parse
-outputs of ``virsh command`` (both XML and text). Commands are grouped in childs
-objects accessible via properties.
-
+outputs of the ``virsh`` command (both XML and text). Commands are grouped in
+childs objects accessible via properties.
 
 Installation
-============
+------------
 This module is compatible with python2.7 and python 3.*. The module is
 on **PyPi** so you can use the ``pip`` command for installing it.
 
@@ -25,7 +24,7 @@ For example, to use ``kvm`` in a virtualenv:
 Otherwise sources are on github: https://github.com/fmenabe/python-kvm
 
 Usage
-=====
+-----
 You need to import the necessary classes from ``unix`` module. An hypervisor is
 represented by the **Hypervisor** class and must wrap an object of type
 ``unix.Local`` or ``unix.Remote``. It theorically support any Unix system, but
