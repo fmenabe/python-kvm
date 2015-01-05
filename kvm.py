@@ -19,6 +19,15 @@ unix.CONTROLS.update(CONTROLS)
 # Characters in generating strings.
 _CHOICES = string.ascii_letters[:6] + string.digits
 
+RUNNING = 'running'
+IDLE = 'idle'
+PAUSED = 'paused'
+SHUTDOWN = 'shutdown'
+SHUTOFF = 'shut off'
+CRASHED = 'crashed'
+DYING = 'dying'
+SUSPENDED = 'pmsuspended'
+
 MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                           'sysinfo': {'type': 'dict'},
                           'nodeinfo': {'type': 'dict'},
@@ -33,7 +42,31 @@ MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                                               'key': 'domainCapabilities'},
                           'freecell': {'type': 'dict'},
                           'freepages': {'type': 'dict'},
-                          'allocpages': {'type': 'none'}}}
+                          'allocpages': {'type': 'none'}},
+           'domain': {'autostart': {'type': 'none'},
+                      'inject-nmi': {'type': 'none'},
+                      'desc': {'type': 'dict'},
+                      'destroy': {'type': 'none'},
+                      'domblkinfo': {'type': 'dict'},
+                      'domdisplay': {'type': 'str'},
+                      'dominfo': {'type': 'dict'},
+                      'domuuid': {'type': 'str'},
+                      'domid': {'type': 'str'},
+                      'domname': {'type': 'str'},
+                      'domstate': {'type': 'str'},
+                      'domcontrol': {'type': 'str'},
+                      'dumpxml': {'type': 'xml',
+                                  'key': 'domain'},
+                      'reboot': {'type': 'none'},
+                      'reset': {'type': 'none'},
+                      'screenshot': {'type': 'none'},
+                      'shutdown': {'type': 'none'},
+                      'start': {'type': 'none'},
+                      'suspend': {'type': 'none'},
+                      'resume': {'type': 'none'},
+                      'ttyconsole': {'type': 'str'},
+                      'undefine': {'type': 'none'},
+           }}
 
 
 #
@@ -97,6 +130,10 @@ def __str_to_dict(string):
 
 
 def __add_method(obj, method, conf):
+    def str_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            return self._host.virsh(method, *args, **kwargs)[0]
+
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
             return __str_to_dict(self._host.virsh(method, *args, **kwargs))
@@ -121,6 +158,11 @@ class KvmError(Exception):
     pass
 
 
+class TimeoutException(Exception):
+    """Exception raise when a timeout is exceeded."""
+    pass
+
+
 #
 ## Classes.
 #
@@ -135,7 +177,7 @@ def Hypervisor(host):
         def __init__(self):
             host.__class__.__init__(self)
             self.__dict__.update(host.__dict__)
-            for control, value in iteritems(CONTROLS):
+            for control, value in CONTROLS.items():
                 setattr(self, '_%s' % control, value)
 
 
@@ -155,12 +197,61 @@ def Hypervisor(host):
                 elif not status:
                     raise KvmError(stderr)
                 else:
-                    return stdout.splitlines()[:-1]
+                    stdout = stdout.splitlines()
+                    return stdout[:-1] if not stdout[-1] else stdout
 
 
         @property
         def hypervisor(self):
             return _Hypervisor(weakref.ref(self)())
+
+
+        @property
+        def domain(self):
+            return _Domain(weakref.ref(self)())
+
+
+        def list_domains(self, **kwargs):
+            """List domains. **kwargs** parameters can be:
+                * *all*: list all domains
+                * *inactive*: list only inactive domains
+                * *persisten*: include persistent domains
+                * *transient*: include transient domains
+                * *autostart*: list autostarting domains
+                * *no_autostart*: list not autostarting domains
+                * *with_snapshot*: list domains having snapshots
+                * *without_snapshort*: list domains not having snapshots
+                * *managed_save*:  domains that have managed save state (only
+                                   possible if they are in the shut off state,
+                                   so you need to specify *inactive* or *all*
+                                   to actually list them) will instead show as
+                                   saved
+                * *with_managed_save*: list domains having a managed save image
+                * *without_managed_save*: list domains not having a managed save
+                                          image
+                * *states*: filter on given states (automatically set *all*
+                            option)
+            """
+            virsh_kwargs = {'table': True}
+            states = kwargs.pop('states', [])
+            if states:
+                kwargs['all'] = True
+
+            # Add virsh options for kwargs.
+            for arg, value in kwargs.items():
+                if not value:
+                    continue
+                virsh_kwargs.update({arg: True})
+
+            # Get domains (filtered on state).
+            with self.set_controls(parse=True):
+                domains = {name: {'id': domid,
+                                  'state': ' '.join(state)}
+                           for line in self.virsh('list', **virsh_kwargs)[2:]
+                           for domid, name, *state in [line.strip().split()]
+                           if not states or ' '.join(state) in states}
+
+            return domains
 
     return Hypervisor()
 
@@ -171,3 +262,40 @@ class _Hypervisor(object):
 
 for mname, mconf in MAPPING['hypervisor'].items():
     __add_method(_Hypervisor, mname, mconf)
+
+
+class _Domain(object):
+    def __init__(self, host):
+        self._host = host
+
+
+    def create(self, conf, *kwargs):
+        pass
+
+
+    def define(self, conf):
+        pass
+
+
+    def stop(self, domain, timeout=30, force=False):
+        import signal, time
+
+        def timeout_handler(signum, frame):
+            raise TimeoutException()
+
+        self.shutdown(domain)
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout)
+
+        try:
+            while self.domstate(domain) != SHUTOFF:
+                time.sleep(1)
+        except TimeoutException:
+            if force:
+                self.destroy(domain)
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
+            signal.alarm(0)
+
+for mname, mconf in MAPPING['domain'].items():
+    __add_method(_Domain, mname, mconf)
