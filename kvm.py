@@ -139,8 +139,7 @@ def __add_method(obj, method, conf):
             return __str_to_dict(self._host.virsh(method, *args, **kwargs))
 
     def none_method(self, *args, **kwargs):
-        with self._host.set_controls(parse=True):
-            stdout = self._host.virsh(method, *args, **kwargs)
+        return self._host.virsh(method, *args, **kwargs)
 
     def xml_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
@@ -192,6 +191,12 @@ def Hypervisor(host):
                                                       command,
                                                       *args,
                                                       **kwargs)
+                # Clean stdout and stderr.
+                if stdout and stdout[-1] == '\n':
+                    stdout = stdout[:-1]
+                if stderr and stderr[-1] == '\n':
+                    stderr = stderr[:-1]
+
                 if not self._parse:
                     return status, stdout, stderr
                 elif not status:
@@ -292,7 +297,12 @@ class _Domain(object):
                 time.sleep(1)
         except TimeoutException:
             if force:
-                self.destroy(domain)
+                status, stdout, stderr = self.destroy(domain)
+                if status:
+                    stderr = 'VM has been destroyed after %ss' % timeout
+                return (status, stdout, stderr)
+            else:
+                return (False, '', 'VM not stopped after %ss' % timeout)
         finally:
             signal.signal(signal.SIGALRM, old_handler)
             signal.alarm(0)
