@@ -47,14 +47,22 @@ MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                       'inject-nmi': {'type': 'none'},
                       'desc': {'type': 'dict'},
                       'destroy': {'type': 'none'},
-                      'domblkinfo': {'type': 'dict'},
-                      'domdisplay': {'type': 'str'},
-                      'dominfo': {'type': 'dict'},
-                      'domuuid': {'type': 'str'},
-                      'domid': {'type': 'str'},
-                      'domname': {'type': 'str'},
-                      'domstate': {'type': 'str'},
-                      'domcontrol': {'type': 'str'},
+                      'blkinfo': {'type': 'dict',
+                                  'cmd': 'domblkinfo'},
+                      'display': {'type': 'str',
+                                  'cmd': 'domdisplay'},
+                      'info': {'type': 'dict',
+                               'cmd': 'dominfo'},
+                      'uuid': {'type': 'str',
+                               'cmd': 'domuuid'},
+                      'id': {'type': 'str',
+                             'cmd': 'domid'},
+                      'name': {'type': 'str',
+                               'cmd': 'domname'},
+                      'state': {'type': 'str',
+                                'cmd': 'domstate'},
+                      'control': {'type': 'str',
+                                  'cmd': 'domcontrol'},
                       'dumpxml': {'type': 'xml',
                                   'key': 'domain'},
                       'reboot': {'type': 'none'},
@@ -130,20 +138,21 @@ def __str_to_dict(string):
 
 
 def __add_method(obj, method, conf):
+    cmd = conf.get('cmd', method)
     def str_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
-            return self._host.virsh(method, *args, **kwargs)[0]
+            return self._host.virsh(cmd, *args, **kwargs)[0]
 
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
-            return __str_to_dict(self._host.virsh(method, *args, **kwargs))
+            return __str_to_dict(self._host.virsh(cmd, *args, **kwargs))
 
     def none_method(self, *args, **kwargs):
         return self._host.virsh(method, *args, **kwargs)
 
     def xml_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
-            xml = '\n'.join(self._host.virsh(method, *args, **kwargs))
+            xml = '\n'.join(self._host.virsh(cmd, *args, **kwargs))
         return _xml_to_dict(etree.fromstring(xml))[conf['key']]
 
     setattr(obj, method, locals()['%s_method' % conf['type']])
