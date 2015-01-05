@@ -201,10 +201,10 @@ def Hypervisor(host):
                                                       *args,
                                                       **kwargs)
                 # Clean stdout and stderr.
-                if stdout and stdout[-1] == '\n':
-                    stdout = stdout[:-1]
-                if stderr and stderr[-1] == '\n':
-                    stderr = stderr[:-1]
+                if stdout:
+                    stdout = stdout.rstrip('\n')
+                if stderr:
+                    stderr = stderr.rstrip('\n')
 
                 if not self._parse:
                     return status, stdout, stderr
@@ -226,10 +226,16 @@ def Hypervisor(host):
 
 
         def list_domains(self, **kwargs):
-            """List domains. **kwargs** parameters can be:
+            """List domains. **kwargs** can contains any option supported by the
+            virsh command. It can also contains a **state** argument which is a
+            list of states for filtering (*all* option is automatically set).
+            For compatibility the options ``--table``, ``--name`` and ``--uuid``
+            have been disabled.
+
+            Virsh options are (some option may not work according your version):
                 * *all*: list all domains
                 * *inactive*: list only inactive domains
-                * *persisten*: include persistent domains
+                * *persistent*: include persistent domains
                 * *transient*: include transient domains
                 * *autostart*: list autostarting domains
                 * *no_autostart*: list not autostarting domains
@@ -241,29 +247,32 @@ def Hypervisor(host):
                                    to actually list them) will instead show as
                                    saved
                 * *with_managed_save*: list domains having a managed save image
-                * *without_managed_save*: list domains not having a managed save
-                                          image
-                * *states*: filter on given states (automatically set *all*
-                            option)
+                * *without_managed_save*: list domains not having a managed
+                                          save image
             """
-            virsh_kwargs = {'table': True}
+            # Remove incompatible options between virsh versions.
+            kwargs.pop('name', None)
+            kwargs.pop('uuid', None)
+
+            # Get states argument (which is not an option of the virsh command).
             states = kwargs.pop('states', [])
             if states:
                 kwargs['all'] = True
 
             # Add virsh options for kwargs.
-            for arg, value in kwargs.items():
-                if not value:
-                    continue
-                virsh_kwargs.update({arg: True})
+            virsh_opts = {arg: value for arg, value in kwargs.items() if value}
 
             # Get domains (filtered on state).
+            domains = {}
             with self.set_controls(parse=True):
-                domains = {name: {'id': domid,
-                                  'state': ' '.join(state)}
-                           for line in self.virsh('list', **virsh_kwargs)[2:]
-                           for domid, name, *state in [line.strip().split()]
-                           if not states or ' '.join(state) in states}
+                stdout  =  self.virsh('list', **virsh_opts)
+                elts = [elt.lower() for elt in stdout[0].split()]
+                for line in stdout[2:]:
+                    values = [elt.strip() for elt in line.split('  ') if elt]
+                    domain = dict(zip(elts, values))
+                    if states and domain['state'] not in states:
+                        continue
+                    domains.setdefault(domain.pop('name'), domain)
 
             return domains
 
@@ -302,7 +311,7 @@ class _Domain(object):
         signal.alarm(timeout)
 
         try:
-            while self.domstate(domain) != SHUTOFF:
+            while self.state(domain) != SHUTOFF:
                 time.sleep(1)
         except TimeoutException:
             if force:
