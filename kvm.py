@@ -266,13 +266,17 @@ def Hypervisor(host):
             domains = {}
             with self.set_controls(parse=True):
                 stdout  =  self.virsh('list', **virsh_opts)
-                elts = [elt.lower() for elt in stdout[0].split()]
+
                 for line in stdout[2:]:
-                    values = [elt.strip() for elt in line.split('  ') if elt]
-                    domain = dict(zip(elts, values))
-                    if states and domain['state'] not in states:
-                        continue
-                    domains.setdefault(domain.pop('name'), domain)
+                    domid, name, state, *params = line.split()
+                    # Manage state in two words.
+                    if state == 'shut':
+                        state += ' %s' % params.pop(0)
+                    domain = {'id': int(domid) if domid != '-' else -1,
+                              'state': state}
+                    if 'title' in kwargs:
+                        domain['title'] = ' '.join(params) if params else ''
+                    domains[name] = domain
 
             return domains
 
