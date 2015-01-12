@@ -134,6 +134,29 @@ def from_xml(elt):
     return result
 
 
+def to_xml(tag_name, conf):
+    tag = etree.Element(tag_name)
+    for elt, value in conf.items():
+        if elt.startswith('@'):
+            tag.attrib[elt[1:]] = value
+        elif elt == '#text':
+            tag.text = value
+        elif isinstance(value, dict):
+            tag.append(to_xml(elt, value))
+        elif isinstance(value, list):
+            print(tag_name, elt, value)
+            for child in value:
+                tag.append(to_xml(elt, child))
+        elif isinstance(value, bool):
+            tag.append(etree.Element(elt))
+            continue
+        else:
+            child = etree.Element(elt)
+            child.text = value
+            tag.append(child)
+    return tag
+
+
 def __str_to_dict(string):
     def format_key(key):
         return (key.strip().lower()
