@@ -6,7 +6,8 @@ import random
 import string
 import weakref
 import unix
-from lxml import etree
+import lxml.etree as etree
+from collections import OrderedDict
 
 import sys
 SELF = sys.modules[__name__]
@@ -97,7 +98,7 @@ def gen_mac():
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)])))
 
 
-def _xml_to_dict(elt):
+def from_xml(elt):
     """Recursive function that transform an XML element to a dictionnary.
     **elt** must be of type ``lxml.etree.Element``."""
     tag = elt.tag
@@ -106,18 +107,19 @@ def _xml_to_dict(elt):
     childs = elt.getchildren()
 
     if not attrs and not childs and not text:
-        return {tag: True}
+        value = True
     elif not attrs and not childs and text:
-        return {tag: text}
+        value = text
     elif attrs and not childs:
         child = {'@%s' % attr: value for attr, value in attrs}
         if text:
             child['#text'] = text
-        return {tag: child}
+        value = child
     elif childs:
-        elts = {'@%s' % attr: value for attr, value in attrs} if attrs else {}
+        elts = (OrderedDict(('@%s' % attr, value) for attr, value in attrs)
+                if attrs else OrderedDict())
         for child in childs:
-            child = _xml_to_dict(child)
+            child = from_xml(child)
             child_tag = list(child.keys())[0]
             if child_tag  in elts:
                 if not isinstance(elts[child_tag], list):
@@ -125,7 +127,11 @@ def _xml_to_dict(elt):
                 elts[child_tag].append(child[child_tag])
             else:
                 elts.update(child)
-        return {tag: elts}
+        value = elts
+
+    result = OrderedDict()
+    result[tag] = value
+    return result
 
 
 def __str_to_dict(string):
