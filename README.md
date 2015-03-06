@@ -1,4 +1,7 @@
-The purpose of this module is to manage KVM hosts (starting/stopping/destroying VM, createing/resizing disks, ...). It is just the definition of many basic commands of 'virsh' and 'qemu'. It use the module 'python-unix' and class decorators for flexibility and simplicity.
+The purpose of this module is to manage KVM hosts (starting/stopping/destroying
+VM, createing/resizing disks, ...). It is just the definition of many basic
+commands of 'virsh' and 'qemu'. It use the module 'python-unix' and class
+decorators for flexibility and simplicity.
 
 Better explications are examples ^^:
 ```

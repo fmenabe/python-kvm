@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup (
-    name='Python remote KVM manager',
+    name='kvm',
     version='0.1',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
