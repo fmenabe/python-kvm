@@ -1,50 +1,25 @@
+"""This module allow to manage KVM hosts."""
+
 import os
 import re
 import random
 import string
-import time
-import signal
-from xml.dom.minidom import Document, Element, parseString
-from xml.dom.minidom import _write_data
+import weakref
 import unix
+import lxml.etree as etree
+from collections import OrderedDict
 
-################################################################################
-########                    Hacks for XML fromatting                    ########
-################################################################################
-def writexml_document(self, writer, indent="", addindent="", newl=""):
-    for node in self.childNodes:
-        node.writexml(writer, indent, addindent, newl)
+import sys
+SELF = sys.modules[__name__]
 
 
-def writexml_element(self, writer, indent="", addindent="", newl=""):
-    writer.write(newl + indent+"<" + self.tagName)
+# Controls.
+CONTROLS = {'parse': False}
+unix.CONTROLS.update(CONTROLS)
 
-    attrs = self._get_attributes()
-    a_names = attrs.keys()
-    a_names.sort()
+# Characters in generating strings.
+_CHOICES = string.ascii_letters[:6] + string.digits
 
-    onetextnode = False
-    for a_name in a_names:
-        writer.write(" %s=\"" % a_name)
-        _write_data(writer, attrs[a_name].value)
-        writer.write("\"")
-    if self.childNodes:
-        writer.write(">")
-        lastnodetype=self.childNodes[0].nodeType
-        for node in self.childNodes:
-            if lastnodetype==node.TEXT_NODE:
-                node.writexml(writer,"","","")
-            else:
-                node.writexml(writer, ("%s%s") % (indent,addindent), addindent, newl)
-            lastnodetype=node.nodeType
-        if lastnodetype==node.TEXT_NODE:
-            writer.write("</%s>" % (self.tagName))
-        else:
-            writer.write("%s%s</%s>" % (newl,indent,self.tagName))
-    else:
-        writer.write("/>")
-
-LANGUAGE = 'en_US.UTF-8'
 RUNNING = 'running'
 IDLE = 'idle'
 PAUSED = 'paused'
@@ -52,430 +27,336 @@ SHUTDOWN = 'shutdown'
 SHUTOFF = 'shut off'
 CRASHED = 'crashed'
 DYING = 'dying'
+SUSPENDED = 'pmsuspended'
 
-SIZE_REGEXP = re.compile('.*virtual size: [0-9.]*G \(([0-9]*) bytes\).*')
-UNKNOWN_CMD_REGEXP = re.compile("error: unknown command: '(.*)'")
-BAD_OPTION_REGEXP = re.compile("error: command '(.*)' doesn't support option '(.*)'")
+MAPPING = {'hypervisor': {'version': {'type': 'dict'},
+                          'sysinfo': {'type': 'dict'},
+                          'nodeinfo': {'type': 'dict'},
+                          'nodecpumap': {'type': 'dict'},
+                          'nodecpustats': {'type': 'dict'},
+                          'nodememstats': {'type': 'dict'},
+                          'nodesuspend': {'type': 'none'},
+                          'node_memory_tune': {'type': 'none'},
+                          'capabilities': {'type': 'xml',
+                                           'key': 'capabilities'},
+                          'domcapabilities': {'type': 'xml',
+                                              'key': 'domainCapabilities'},
+                          'freecell': {'type': 'dict'},
+                          'freepages': {'type': 'dict'},
+                          'allocpages': {'type': 'none'}},
+           'domain': {'autostart': {'type': 'none'},
+                      'inject-nmi': {'type': 'none'},
+                      'desc': {'type': 'dict'},
+                      'destroy': {'type': 'none'},
+                      'blkinfo': {'type': 'dict',
+                                  'cmd': 'domblkinfo'},
+                      'display': {'type': 'str',
+                                  'cmd': 'domdisplay'},
+                      'info': {'type': 'dict',
+                               'cmd': 'dominfo'},
+                      'uuid': {'type': 'str',
+                               'cmd': 'domuuid'},
+                      'id': {'type': 'str',
+                             'cmd': 'domid'},
+                      'name': {'type': 'str',
+                               'cmd': 'domname'},
+                      'state': {'type': 'str',
+                                'cmd': 'domstate'},
+                      'control': {'type': 'str',
+                                  'cmd': 'domcontrol'},
+                      'dumpxml': {'type': 'xml',
+                                  'key': 'domain'},
+                      'reboot': {'type': 'none'},
+                      'reset': {'type': 'none'},
+                      'screenshot': {'type': 'none'},
+                      'shutdown': {'type': 'none'},
+                      'start': {'type': 'none'},
+                      'suspend': {'type': 'none'},
+                      'resume': {'type': 'none'},
+                      'ttyconsole': {'type': 'str'},
+                      'undefine': {'type': 'none'},
+           }}
 
 
-CHOICES = string.letters[:6] + string.digits
+#
+# Functions for generating datas.
+#
 def gen_uuid():
-    return '-'.join((
-        ''.join([random.choice(CHOICES) for i in xrange(0, 8)]),
-        ''.join([random.choice(CHOICES) for i in xrange(0, 4)]),
-        ''.join([random.choice(CHOICES) for i in xrange(0, 4)]),
-        ''.join([random.choice(CHOICES) for i in xrange(0, 4)]),
-        ''.join([random.choice(CHOICES) for i in xrange(0, 12)]),
-    ))
+    """Generate a random uuid."""
+    return '-'.join((''.join([random.choice(_CHOICES) for _ in range(0, 8)]),
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 4)]),
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 4)]),
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 4)]),
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 12)])))
 
 
 def gen_mac():
-    return ':'.join((
-        '54', '52', '00',
-        ''.join([random.choice(CHOICES) for i in xrange(0, 2)]),
-        ''.join([random.choice(CHOICES) for i in xrange(0, 2)]),
-        ''.join([random.choice(CHOICES) for i in xrange(0, 2)])
-    ))
+    """Generate a random mac address."""
+    return ':'.join(('54', '52', '00',
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 2)]),
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 2)]),
+                     ''.join([random.choice(_CHOICES) for _ in range(0, 2)])))
+
+
+def from_xml(elt):
+    """Recursive function that transform an XML element to a dictionnary.
+    **elt** must be of type ``lxml.etree.Element``."""
+    tag = elt.tag
+    attrs = elt.items()
+    text = elt.text.strip() if elt.text else None
+    childs = elt.getchildren()
+
+    if not attrs and not childs and not text:
+        value = True
+    elif not attrs and not childs and text:
+        value = text
+    elif attrs and not childs:
+        child = {'@%s' % attr: value for attr, value in attrs}
+        if text:
+            child['#text'] = text
+        value = child
+    elif childs:
+        elts = (OrderedDict(('@%s' % attr, value) for attr, value in attrs)
+                if attrs else OrderedDict())
+        for child in childs:
+            child = from_xml(child)
+            child_tag = list(child.keys())[0]
+            if child_tag  in elts:
+                if not isinstance(elts[child_tag], list):
+                    elts[child_tag] = [elts[child_tag]]
+                elts[child_tag].append(child[child_tag])
+            else:
+                elts.update(child)
+        value = elts
+
+    result = OrderedDict()
+    result[tag] = value
+    return result
+
+
+def to_xml(tag_name, conf):
+    tag = etree.Element(tag_name)
+    for elt, value in conf.items():
+        if elt.startswith('@'):
+            tag.attrib[elt[1:]] = value
+        elif elt == '#text':
+            tag.text = value
+        elif isinstance(value, dict):
+            tag.append(to_xml(elt, value))
+        elif isinstance(value, list):
+            print(tag_name, elt, value)
+            for child in value:
+                tag.append(to_xml(elt, child))
+        elif isinstance(value, bool):
+            tag.append(etree.Element(elt))
+            continue
+        else:
+            child = etree.Element(elt)
+            child.text = value
+            tag.append(child)
+    return tag
+
+
+def __str_to_dict(string):
+    def format_key(key):
+        return (key.strip().lower()
+                   .replace(' ', '_').replace('(', '').replace(')', ''))
+    return {format_key(key): (value or '').strip()
+            for line in string if line
+            for key, value in [line.split(':')]}
+
+
+def __add_method(obj, method, conf):
+    cmd = conf.get('cmd', method)
+    def str_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            return self._host.virsh(cmd, *args, **kwargs)[0]
+
+    def dict_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            return __str_to_dict(self._host.virsh(cmd, *args, **kwargs))
+
+    def none_method(self, *args, **kwargs):
+        return self._host.virsh(method, *args, **kwargs)
+
+    def xml_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            xml = '\n'.join(self._host.virsh(cmd, *args, **kwargs))
+        return _xml_to_dict(etree.fromstring(xml))[conf['key']]
+
+    setattr(obj, method, locals()['%s_method' % conf['type']])
+
+
+#
+# Exceptions
+#
+class KvmError(Exception):
+    """Main exception for this module."""
+    pass
+
 
 class TimeoutException(Exception):
+    """Exception raise when a timeout is exceeded."""
     pass
 
 
-class KVMError(Exception):
-    pass
-
-
-def KVM(host):
+#
+## Classes.
+#
+def Hypervisor(host):
     unix.isvalid(host)
 
-    class KVM(host.__class__):
+    class Hypervisor(host.__class__):
+        """This object represent an Hypervisor. **host** must be an object of
+        type ``unix.Local`` or ``unix.Remote`` (or an object inheriting from
+        them).
+        """
         def __init__(self):
             host.__class__.__init__(self)
             self.__dict__.update(host.__dict__)
+            for control, value in CONTROLS.items():
+                setattr(self, '_%s' % control, value)
 
 
-        def virsh(self, command, args):
-            virsh_cmd = ' '.join((
-                'LANGUAGE=%s' % LANGUAGE,
-                'virsh',
-                command,
-                args,
-            ))
-            status, stdout, stderr = self.execute(virsh_cmd)
-            if not status \
-            and (UNKNOWN_CMD_REGEXP.match(stderr) or BAD_OPTION_REGEXP.match(stderr)):
-                raise KVMError('%s: %s' % (virsh_cmd, stderr))
-            return (status, stdout, stderr)
+        def virsh(self, command, *args, **kwargs):
+            """Wrap the execution of the virsh command. It set a control for
+            putting options after the virsh **command**. If **parse** control
+            is activated, the value of ``stdout`` is returned or **KvmError**
+            exception is raised.
+            """
+            with self.set_controls(options_place='after', decode='utf-8'):
+                status, stdout, stderr = self.execute('virsh',
+                                                      command,
+                                                      *args,
+                                                      **kwargs)
+                # Clean stdout and stderr.
+                if stdout:
+                    stdout = stdout.rstrip('\n')
+                if stderr:
+                    stderr = stderr.rstrip('\n')
+
+                if not self._parse:
+                    return status, stdout, stderr
+                elif not status:
+                    raise KvmError(stderr)
+                else:
+                    stdout = stdout.splitlines()
+                    return stdout[:-1] if not stdout[-1] else stdout
 
 
         @property
-        def vms(self):
-            return [
-                vm.split()[1] \
-                for vm in self.virsh('list', '--all')[1].split('\n')[2:-1]
-            ]
-
-
-        def isdefined(self, vm):
-            return True if vm in self.vms else False
-
-
-        def state(self, vm):
-            if not self.isdefined(vm):
-                return (False, '', 'VM not exists')
-
-            return self.virsh('domstate', vm)[1].split('\n')[0]
-
-
-        def start(self, vm):
-            return self.virsh('start', vm)
-
-
-        def reboot(self, vm):
-            return self.virsh('reboot', vm)
-
-
-        def stop(self, vm, timeout=30, force=False):
-            output = self.virsh('shutdown', vm)
-            if not output[0]:
-                return output
-
-            def timeout_handler(signum, frame):
-                raise TimeoutException()
-            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout)
-
-            try:
-                while self.state(vm) != SHUTOFF:
-                    time.sleep(1)
-            except TimeoutException:
-                if force:
-                    status, stdout,stderr = self.destroy(vm)
-                    if status:
-                        stderr = 'VM has been destroy after %ss' % timeout
-                    return (status, stdout, stderr)
-                else:
-                    return (False, '', 'VM not stopping after %ss' % timeout)
-            finally:
-                signal.signal(signal.SIGALRM, old_handler)
-                signal.alarm(0)
-
-            return output
-
-
-        def destroy(self, vm):
-            return self.virsh('destroy', vm)
-
-
-        def restore(self, vm, src):
-            return self.virsh('restore', src)
-
-
-        def save(self, vm, dst):
-            return self.virsh('save', ''.join("%s %s" %(vm, dst)))
-
-
-        def define(self, conf_file):
-            return self.virsh('define', conf_file)
-
-
-        def undefine(self, vm, del_img=False):
-            return self.virsh('undefine', vm)
-
-
-        def migrate(self, vm, dst):
-            return self.virsh('migrate', ' '.join(
-                "--connect",
-                "qemu:///system",
-                "--live",
-                "--persistent",
-                "--copy-storage-all",
-                "%s qemu+ssh://%s/system" % (vm, dst)
-            ))
-
-
-        def img_size(self, img_path):
-            if not self.exists(img_path):
-                raise OSError("file '%s' not exists" % img_path)
-            stdout = self.execute('qemu-img info %s' % img_path)[1]
-            return int(SIZE_REGEXP.search(stdout).group(1)) / 1024
-
-
-        def img_create(self, img_path, format, size):
-            return self.execute('qemu-img create -f %s %s %sG' % (
-                format, img_path, size
-            ))
-
-
-        def img_convert(self, format, src_path, dst_path, delete=False):
-            output = self.execute("qemu-img convert -O %s %s %s" % (
-                format,
-                src_path,
-                dst_path
-            ))
-            if not delete or not output:
-                return output
-
-            return self.rm(src_path)
-
-
-        def img_resize(self, path, new_size):
-            return self.execute(
-                "qemu-img resize %s %sG" % (path, new_size)
-            )
-
-
-        def img_load(self, path, nbd='/dev/nbd0'):
-            if not self.isloaded('nbd'):
-                output = self.load('nbd')
-                if not output[0]:
-                    return output
-
-            if not self.exists(path):
-                return [False, '', "'%' not exists" % path]
-
-            output = self.execute("qemu-nbd -c %s %s" % (nbd, path))
-            time.sleep(2)
-            return output
-
-
-        def img_unload(self, nbd='/dev/nbd0'):
-            return self.execute("qemu-nbd -d %s" % nbd)
-
-
-        def __xml_value(self, elt, tag):
-            return elt.getElementsByTagName(tag)[0].childNodes[0].data
-
-
-        def __xml_attr(self, elt, tag, attr):
-            try:
-                return elt.getElementsByTagName(tag)[0].getAttribute(attr)
-            except IndexError:
-                return ''
-
-
-        def conf(self, vm):
-            if not self.isdefined(vm):
-                raise KVMError("VM '%s' is not defined" % vm)
-            xml_conf = self.virsh('dumpxml', vm)[1]
-            dom = parseString(xml_conf)
-
-            disks = [
-                {
-                    'path': self.__xml_attr(disk_node, 'source', 'file'),
-                    'format': self.__xml_attr(disk_node, 'driver', 'type'),
-                    'driver': self.__xml_attr(disk_node, 'target', 'bus'),
-                    'device': self.__xml_attr(disk_node, 'target', 'dev')
-                }
-                for disk_node in dom.getElementsByTagName('disk') \
-                if disk_node.getAttribute('device') == 'disk'
-            ]
-            for index, disk in enumerate(disks):
-                try:
-                    disks[index]['size'] = self.img_size(disk['path'])
-                except OSError:
-                    disks[index]['size'] = 0
-
-            interfaces = [
-                {
-                    'mac': self.__xml_attr(int_node, 'mac', 'address'),
-                    'vlan': self.__xml_attr(int_node, 'source', 'bridge'),
-                    'interface': self.__xml_attr(int_node, 'target', 'dev'),
-                    'driver': self.__xml_attr(int_node, 'model', 'type')
-                }
-                for int_node in dom.getElementsByTagName('interface')
-            ]
-
-            return {
-                'pc': self.__xml_attr(dom.getElementsByTagName('os')[0], 'type', 'machine'),
-                'name': self.__xml_value(dom, 'name'),
-                'uuid': self.__xml_value(dom, 'uuid'),
-                'memory': int(self.__xml_value(dom, 'currentMemory')),
-                'memory_max': int(self.__xml_value(dom, 'memory')),
-                'cores': int(self.__xml_value(dom, 'vcpu')),
-                'disks': disks,
-                'interfaces': interfaces
-            }
-
-
-        def __node(self, name, attrs={}, text='', childs=[]):
-            node = self.xml.createElement(name)
-            for attr_name, attr_value in attrs.iteritems():
-                node.setAttribute(attr_name, attr_value)
-            if text:
-                node.appendChild(self.xml.createTextNode(str(text)))
-            if childs:
-                for child_node in childs:
-                    node.appendChild(child_node)
-            return node
-
-
-        def _gen_devices_config(self, disks, interfaces):
-            devices_nodes = [self.__node('emulator', text='/usr/bin/kvm')]
-
-            # Add disks.
-            devices_nodes.extend(
-                (
-                    self.__node('disk', {'type': 'file', 'device': 'disk'}, childs=(
-                        self.__node('driver', {'name': 'qemu', 'type': disk['format']}),
-                        self.__node('source', {'file': disk['path']}),
-                        self.__node('target', {'dev': disk['device'], 'bus': disk['driver']})
-                    ))
-                ) for disk in disks
-            )
-
-            # Add interfaces.
-            devices_nodes.extend(
-                (
-                    self.__node('interface', {'type': 'bridge'}, childs=(
-                        self.__node('mac', {'address': interface['mac']}),
-                        self.__node('source', {'bridge': 'br%s' % interface['vlan']}),
-                        self.__node('model', {'type': interface['driver']}),
-                    ))
-                    for interface in interfaces
-                )
-            )
-
-            # Add other devices.
-            devices_nodes.extend((
-                self.__node('serial', {'type': 'pty'}, childs=(
-                    self.__node('target', {'port': '0'}),
-                )),
-                self.__node('console', {'type': 'pty'}, childs=(
-                    self.__node('target', {'port': '0'}),
-                )),
-                self.__node('input', {'type': 'mouse', 'bus': 'ps2'}),
-                self.__node('graphics', {
-                    'type': 'vnc',
-                    'port': '-1',
-                    'autoport': 'yes',
-                    'keymap': 'fr'}
-                ),
-                self.__node('sound', {'model': 'es1370'}),
-                self.__node('video', childs=(
-                    self.__node('model', {'type': 'cirrus', 'vram': '9216', 'heads': '1'}),
-                )
-            )))
-            return devices_nodes
-
-
-        def gen_conf(self, conf_file, params):
-            # Hack for not printing xml version
-            Document.writexml = writexml_document
-
-            # Hack for XML output: text node on one line
-            Element.writexml = writexml_element
-
-            self.xml = Document()
-    #        memory = int(float(params['memory']) * 1024 * 1024)
-
-            config = self.__node('domain', {'type': 'kvm'}, childs=(
-                self.__node('name', text=params['name']),
-                self.__node('uuid', text=params['uuid']),
-                self.__node('memory', text=params['memory']),
-                self.__node('currentMemory', text=params['memory']),
-                self.__node('vcpu', text=params['cores']),
-                self.__node('os', childs=(
-                    self.__node('type', {
-                        'arch': 'x86_64',
-    #                    'machine': 'pc-0.11'
-                    }, 'hvm'),
-                    self.__node('boot', {'dev': 'hd'})
-                )),
-                self.__node('features', childs=(
-                    self.__node('acpi'),
-                    self.__node('apic'),
-                    self.__node('pae')
-                )),
-                self.__node('clock', {'offset': 'utc'}),
-                self.__node('on_poweroff', text='destroy'),
-                self.__node('on_reboot', text='restart'),
-                self.__node('on_crash', text='restart'),
-                self.__node('devices', childs=self._gen_devices_config(
-                    params['disks'],
-                    params['interfaces']
-                ))
-            ))
-
-            try:
-                self.write(
-                    conf_file,
-                    '\n'.join(config.toprettyxml(indent='  ').split('\n')[1:])
-                )
-                return [True, '', '']
-            except IOError as ioerr:
-                return[False, '', ioerr]
-
-
-        def vms_conf(self):
-            vms_conf = {}
-            for vm in self.vms:
-                vms_conf.setdefault(vm, self.conf(vm))
-            return vms_conf
-
-
-        def mount(self, vgroot, lvroot, path):
-            # Load root Volume Group.
-            output = self.execute("vgchange -ay %s" % vgroot)
-            if not output[0]:
-                output[2] = "Unable to load root Volume Group: %s" % output[2]
-                return output
-
-            # Create mount point.
-            if not self.exists(path):
-                output = self.mkdir(path, True)
-                if not output[0]:
-                    output[2] = "Unable to create mount point: %s" % output[2]
-                    return output
-
-            # Mount root partition
-            output = self.execute(
-                "mount /dev/%s/%s %s" % (vgroot, lvroot, path)
-            )
-            if not output[0]:
-                output[2] = "Unable to mount root partition: %s" % output[2]
-                return output
-            self.mounted = [path]
-
-            # Read fstab
-            try:
-                lines = self.readlines(os.path.join(path, 'etc', 'fstab'))
-            except OSError, os_err:
-                return (False, "", "Unable to read fstab: %s" % output[2])
-
-            for line in lines:
-                if \
-                line.find('/dev/mapper') == -1 or \
-                line.find('/dev/mapper/%s-%s' % (vgroot, lvroot)) != -1 or \
-                line.find('swap') != -1:
-                    continue
-                dev, partition = line.split()[:2]
-                mount_point = os.path.join(path, partition[1:])
-                output = self.execute("mount %s %s" % (dev, mount_point))
-                if not output[0]:
-                    output[2] = "Unable to mount '%s' partition: %s" % (
-                        partition, output[2]
-                    )
-                    return output
-                self.mounted.append(mount_point)
-            return (True, "", "")
-
-
-        def umount(self, vgroot):
-            if not self.mounted:
-                return (True, "", "Nothing was mounted")
-
-            mounted = list(self.mounted)
-            for mount in reversed(mounted):
-                output = self.execute("umount %s" % mount)
-                if not output[0]:
-                    output[2] = "Unable to umount '%s': %s" % (mount, output[2])
-                    return output
-                self.mounted.remove(mount)
-
-            output = self.execute("vgchange -an %s" % vgroot)
-            if not output[0]:
-                output[2] = "Unable to unload root Volume Group: %s" % output[2]
-            return output
-
-    return KVM()
+        def hypervisor(self):
+            return _Hypervisor(weakref.ref(self)())
+
+
+        @property
+        def domain(self):
+            return _Domain(weakref.ref(self)())
+
+
+        def list_domains(self, **kwargs):
+            """List domains. **kwargs** can contains any option supported by the
+            virsh command. It can also contains a **state** argument which is a
+            list of states for filtering (*all* option is automatically set).
+            For compatibility the options ``--table``, ``--name`` and ``--uuid``
+            have been disabled.
+
+            Virsh options are (some option may not work according your version):
+                * *all*: list all domains
+                * *inactive*: list only inactive domains
+                * *persistent*: include persistent domains
+                * *transient*: include transient domains
+                * *autostart*: list autostarting domains
+                * *no_autostart*: list not autostarting domains
+                * *with_snapshot*: list domains having snapshots
+                * *without_snapshort*: list domains not having snapshots
+                * *managed_save*:  domains that have managed save state (only
+                                   possible if they are in the shut off state,
+                                   so you need to specify *inactive* or *all*
+                                   to actually list them) will instead show as
+                                   saved
+                * *with_managed_save*: list domains having a managed save image
+                * *without_managed_save*: list domains not having a managed
+                                          save image
+            """
+            # Remove incompatible options between virsh versions.
+            kwargs.pop('name', None)
+            kwargs.pop('uuid', None)
+
+            # Get states argument (which is not an option of the virsh command).
+            states = kwargs.pop('states', [])
+            if states:
+                kwargs['all'] = True
+
+            # Add virsh options for kwargs.
+            virsh_opts = {arg: value for arg, value in kwargs.items() if value}
+
+            # Get domains (filtered on state).
+            domains = {}
+            with self.set_controls(parse=True):
+                stdout  =  self.virsh('list', **virsh_opts)
+
+                for line in stdout[2:]:
+                    domid, name, state, *params = line.split()
+                    # Manage state in two words.
+                    if state == 'shut':
+                        state += ' %s' % params.pop(0)
+                    domain = {'id': int(domid) if domid != '-' else -1,
+                              'state': state}
+                    if 'title' in kwargs:
+                        domain['title'] = ' '.join(params) if params else ''
+                    domains[name] = domain
+
+            return domains
+
+    return Hypervisor()
+
+
+class _Hypervisor(object):
+    def __init__(self, host):
+        self._host = host
+
+for mname, mconf in MAPPING['hypervisor'].items():
+    __add_method(_Hypervisor, mname, mconf)
+
+
+class _Domain(object):
+    def __init__(self, host):
+        self._host = host
+
+
+    def create(self, conf, *kwargs):
+        pass
+
+
+    def define(self, conf):
+        pass
+
+
+    def stop(self, domain, timeout=30, force=False):
+        import signal, time
+
+        def timeout_handler(signum, frame):
+            raise TimeoutException()
+
+        self.shutdown(domain)
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout)
+
+        try:
+            while self.state(domain) != SHUTOFF:
+                time.sleep(1)
+        except TimeoutException:
+            if force:
+                status, stdout, stderr = self.destroy(domain)
+                if status:
+                    stderr = 'VM has been destroyed after %ss' % timeout
+                return (status, stdout, stderr)
+            else:
+                return (False, '', 'VM not stopped after %ss' % timeout)
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
+            signal.alarm(0)
+
+for mname, mconf in MAPPING['domain'].items():
+    __add_method(_Domain, mname, mconf)
