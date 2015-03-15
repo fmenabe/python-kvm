@@ -333,12 +333,10 @@ class _Domain(object):
         self._host = host
 
 
-    def create(self, conf, *kwargs):
-        pass
+    def gen_conf(self, conf):
+        return etree.tostring(to_xml('domain', conf), pretty_print=True)
 
 
-    def define(self, conf):
-        pass
 
 
     def stop(self, domain, timeout=30, force=False):
