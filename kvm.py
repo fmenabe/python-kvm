@@ -345,6 +345,10 @@ class _Domain(object):
         def timeout_handler(signum, frame):
             raise TimeoutException()
 
+        # Check guest exists.
+        if domain not in self._host.list_domains(all=True):
+            return [False, '', 'Domain not found']
+
         self.shutdown(domain)
         old_handler = signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(timeout)
@@ -363,6 +367,7 @@ class _Domain(object):
         finally:
             signal.signal(signal.SIGALRM, old_handler)
             signal.alarm(0)
+        return [True, '', '']
 
 
 class _Image(object):
