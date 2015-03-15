@@ -14,11 +14,53 @@ SELF = sys.modules[__name__]
 
 
 # Controls.
-CONTROLS = {'parse': False}
-unix.CONTROLS.update(CONTROLS)
+_CONTROLS = {'parse': False}
+unix._CONTROLS.update(_CONTROLS)
 
 # Characters in generating strings.
 _CHOICES = string.ascii_letters[:6] + string.digits
+
+_ITEM_RE = re.compile('^.IX (?P<type>\w+) "(?P<value>.*)"$')
+
+_MAPPING = {'hypervisor': {'version': {'type': 'dict'},
+                           'sysinfo': {'type': 'dict'},
+                           'nodeinfo': {'type': 'dict'},
+                           'nodecpumap': {'type': 'dict'},
+                           'nodecpustats': {'type': 'dict'},
+                           'nodememstats': {'type': 'dict'},
+                           'nodesuspend': {'type': 'none'},
+                           'node_memory_tune': {'type': 'none'},
+                           'capabilities': {'type': 'xml',
+                                            'key': 'capabilities'},
+                           'domcapabilities': {'type': 'xml',
+                                               'key': 'domainCapabilities'},
+                           'freecell': {'type': 'dict'},
+                           'freepages': {'type': 'dict'},
+                           'allocpages': {'type': 'none'}},
+            'domain': {'autostart': {'type': 'none'},
+                       'inject-nmi': {'type': 'none'},
+                       'desc': {'type': 'dict'},
+                       'destroy': {'type': 'none'},
+                       'blkinfo': {'cmd': 'domblkinfo', 'type': 'dict'},
+                       'display': {'cmd': 'domdisplay', 'type': 'str'},
+                       'info': {'cmd': 'dominfo', 'type': 'dict'},
+                       'uuid': {'cmd': 'domuuid', 'type': 'str'},
+                       'id': {'cmd': 'domid', 'type': 'str'},
+                       'name': {'cmd': 'domname', 'type': 'str'},
+                       'state': {'cmd': 'domstate', 'type': 'str'},
+                       'control': {'cmd': 'domcontrol', 'type': 'str'},
+                       'dumpxml': {'type': 'xml', 'key': 'domain'},
+                       'reboot': {'type': 'none'},
+                       'reset': {'type': 'none'},
+                       'screenshot': {'type': 'none'},
+                       'shutdown': {'type': 'none'},
+                       'start': {'type': 'none'},
+                       'suspend': {'type': 'none'},
+                       'resume': {'type': 'none'},
+                       'ttyconsole': {'type': 'str'},
+                       'undefine': {'type': 'none'}
+           }}
+
 
 RUNNING = 'running'
 IDLE = 'idle'
@@ -28,54 +70,6 @@ SHUTOFF = 'shut off'
 CRASHED = 'crashed'
 DYING = 'dying'
 SUSPENDED = 'pmsuspended'
-
-MAPPING = {'hypervisor': {'version': {'type': 'dict'},
-                          'sysinfo': {'type': 'dict'},
-                          'nodeinfo': {'type': 'dict'},
-                          'nodecpumap': {'type': 'dict'},
-                          'nodecpustats': {'type': 'dict'},
-                          'nodememstats': {'type': 'dict'},
-                          'nodesuspend': {'type': 'none'},
-                          'node_memory_tune': {'type': 'none'},
-                          'capabilities': {'type': 'xml',
-                                           'key': 'capabilities'},
-                          'domcapabilities': {'type': 'xml',
-                                              'key': 'domainCapabilities'},
-                          'freecell': {'type': 'dict'},
-                          'freepages': {'type': 'dict'},
-                          'allocpages': {'type': 'none'}},
-           'domain': {'autostart': {'type': 'none'},
-                      'inject-nmi': {'type': 'none'},
-                      'desc': {'type': 'dict'},
-                      'destroy': {'type': 'none'},
-                      'blkinfo': {'type': 'dict',
-                                  'cmd': 'domblkinfo'},
-                      'display': {'type': 'str',
-                                  'cmd': 'domdisplay'},
-                      'info': {'type': 'dict',
-                               'cmd': 'dominfo'},
-                      'uuid': {'type': 'str',
-                               'cmd': 'domuuid'},
-                      'id': {'type': 'str',
-                             'cmd': 'domid'},
-                      'name': {'type': 'str',
-                               'cmd': 'domname'},
-                      'state': {'type': 'str',
-                                'cmd': 'domstate'},
-                      'control': {'type': 'str',
-                                  'cmd': 'domcontrol'},
-                      'dumpxml': {'type': 'xml',
-                                  'key': 'domain'},
-                      'reboot': {'type': 'none'},
-                      'reset': {'type': 'none'},
-                      'screenshot': {'type': 'none'},
-                      'shutdown': {'type': 'none'},
-                      'start': {'type': 'none'},
-                      'suspend': {'type': 'none'},
-                      'resume': {'type': 'none'},
-                      'ttyconsole': {'type': 'str'},
-                      'undefine': {'type': 'none'},
-           }}
 
 
 #
@@ -157,7 +151,7 @@ def to_xml(tag_name, conf):
     return tag
 
 
-def __str_to_dict(string):
+def _str_to_dict(string):
     def format_key(key):
         return (key.strip().lower()
                    .replace(' ', '_').replace('(', '').replace(')', ''))
@@ -174,7 +168,7 @@ def __add_method(obj, method, conf):
 
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
-            return __str_to_dict(self._host.virsh(cmd, *args, **kwargs))
+            return _str_to_dict(self._host.virsh(cmd, *args, **kwargs))
 
     def none_method(self, *args, **kwargs):
         return self._host.virsh(method, *args, **kwargs)
@@ -182,9 +176,9 @@ def __add_method(obj, method, conf):
     def xml_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
             xml = '\n'.join(self._host.virsh(cmd, *args, **kwargs))
-        return _xml_to_dict(etree.fromstring(xml))[conf['key']]
+        return from_xml(etree.fromstring(xml), conf['lists'])[conf['key']]
 
-    setattr(obj, method, locals()['%s_method' % conf['type']])
+    setattr(obj, method.replace('-', '_'), locals()['%s_method' % conf['type']])
 
 
 #
@@ -214,7 +208,7 @@ def Hypervisor(host):
         def __init__(self):
             host.__class__.__init__(self)
             self.__dict__.update(host.__dict__)
-            for control, value in CONTROLS.items():
+            for control, value in _CONTROLS.items():
                 setattr(self, '_%s' % control, value)
 
 
@@ -229,7 +223,7 @@ def Hypervisor(host):
                                                       command,
                                                       *args,
                                                       **kwargs)
-                # Clean stdout and stderr.
+                # Clean stdout and stderr.
                 if stdout:
                     stdout = stdout.rstrip('\n')
                 if stderr:
@@ -316,7 +310,7 @@ class _Hypervisor(object):
     def __init__(self, host):
         self._host = host
 
-for mname, mconf in MAPPING['hypervisor'].items():
+for mname, mconf in _MAPPING['hypervisor'].items():
     __add_method(_Hypervisor, mname, mconf)
 
 
@@ -358,5 +352,5 @@ class _Domain(object):
             signal.signal(signal.SIGALRM, old_handler)
             signal.alarm(0)
 
-for mname, mconf in MAPPING['domain'].items():
+for mname, mconf in _MAPPING['domain'].items():
     __add_method(_Domain, mname, mconf)
