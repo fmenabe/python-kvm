@@ -98,7 +98,7 @@ def gen_mac():
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)])))
 
 
-def from_xml(elt):
+def from_xml(elt, force_lists=[]):
     """Recursive function that transform an XML element to a dictionnary.
     **elt** must be of type ``lxml.etree.Element``."""
     tag = elt.tag
@@ -119,8 +119,10 @@ def from_xml(elt):
         elts = (OrderedDict(('@%s' % attr, value) for attr, value in attrs)
                 if attrs else OrderedDict())
         for child in childs:
-            child = from_xml(child)
+            child = from_xml(child, force_lists)
             child_tag = list(child.keys())[0]
+            if child_tag in force_lists:
+                elts[child_tag] = []
             if child_tag  in elts:
                 if not isinstance(elts[child_tag], list):
                     elts[child_tag] = [elts[child_tag]]
