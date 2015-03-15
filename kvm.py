@@ -140,13 +140,12 @@ def to_xml(tag_name, conf):
     tag = etree.Element(tag_name)
     for elt, value in conf.items():
         if elt.startswith('@'):
-            tag.attrib[elt[1:]] = value
+            tag.attrib[elt[1:]] = str(value)
         elif elt == '#text':
-            tag.text = value
+            tag.text = str(value)
         elif isinstance(value, dict):
             tag.append(to_xml(elt, value))
         elif isinstance(value, list):
-            print(tag_name, elt, value)
             for child in value:
                 tag.append(to_xml(elt, child))
         elif isinstance(value, bool):
