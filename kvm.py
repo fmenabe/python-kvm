@@ -298,7 +298,8 @@ def Hypervisor(host):
                 stdout  =  self.virsh('list', **virsh_opts)
 
                 for line in stdout[2:]:
-                    domid, name, state, *params = line.split()
+                    line = line.split()
+                    (domid, name, state), params = line[:3], line[3:]
                     # Manage state in two words.
                     if state == 'shut':
                         state += ' %s' % params.pop(0)
