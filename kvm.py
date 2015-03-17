@@ -44,15 +44,16 @@ _MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                        'desc': {'type': 'dict'},
                        'destroy': {'type': 'none'},
                        'blkstat': {'cmd': 'domblkstat',
-                                   'type': 'stat',
-                                   'ignore': True},
+                                   'type': 'stats',
+                                   'ignore': True,
+                                   'disable': ['human']},
                        'ifstat': {'cmd': 'domifstat',
-                                  'type': 'stat',
+                                  'type': 'stats',
                                   'ignore': True},
                        'if_setlink': {'cmd': 'domif-setlink', 'type': 'none'},
                        'if_getlink': {'cmd': 'domif-getlink', 'type': 'none'},
                        'iftune': {'type': 'none'},
-                       'memstat': {'cmd': 'dommemstat', 'type': 'stat'},
+                       'memstat': {'cmd': 'dommemstat', 'type': 'stats'},
                        'blkinfo': {'cmd': 'domblkinfo', 'type': 'dict'},
                        'display': {'cmd': 'domdisplay', 'type': 'str'},
                        'info': {'cmd': 'dominfo', 'type': 'dict'},
@@ -176,7 +177,7 @@ def _str_to_dict(lines):
             for key, value in [line.split(':')]}
 
 
-def _stats(lines, ignore):
+def _stats(lines, ignore=False):
     return {elts[1 if ignore else 0]: elts[2 if ignore else 1]
             for line in lines if line
             for elts in [line.split()]}
@@ -192,8 +193,10 @@ def __add_method(obj, method, conf):
         with self._host.set_controls(parse=True):
             return _str_to_dict(self._host.virsh(cmd, *args, **kwargs))
 
-    def stat_method(self, *args, **kwargs):
+    def stats_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
+            for opt in conf.get('disable', []):
+                kwargs[opt] = False
             return _stats(self._host.virsh(cmd, *args, **kwargs),
                           conf.get('ignore', False))
 
