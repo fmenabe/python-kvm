@@ -158,12 +158,12 @@ def to_xml(tag_name, conf):
     return tag
 
 
-def _str_to_dict(string):
+def _str_to_dict(lines):
     def format_key(key):
         return (key.strip().lower()
                    .replace(' ', '_').replace('(', '').replace(')', ''))
     return {format_key(key): (value or '').strip()
-            for line in string if line
+            for line in lines if line
             for key, value in [line.split(':')]}
 
 
@@ -183,7 +183,7 @@ def __add_method(obj, method, conf):
     def xml_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
             xml = '\n'.join(self._host.virsh(cmd, *args, **kwargs))
-        return from_xml(etree.fromstring(xml), conf['lists'])[conf['key']]
+        return from_xml(etree.fromstring(xml), conf.get('lists', []))[conf['key']]
 
     setattr(obj, method.replace('-', '_'), locals()['%s_method' % conf['type']])
 
