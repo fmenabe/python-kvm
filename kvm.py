@@ -65,7 +65,6 @@ _MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                        'ttyconsole': {'type': 'str'},
                        'undefine': {'type': 'none'},
                        'attach-disk': {'type': 'none'},
-           }}
 
 
 RUNNING = 'running'
@@ -167,6 +166,12 @@ def _str_to_dict(lines):
             for key, value in [line.split(':')]}
 
 
+def _stats(lines, ignore):
+    return {elts[1 if ignore else 0]: elts[2 if ignore else 1]
+            for line in lines if line
+            for elts in [line.split()]}
+
+
 def __add_method(obj, method, conf):
     cmd = conf.get('cmd', method)
     def str_method(self, *args, **kwargs):
@@ -176,6 +181,11 @@ def __add_method(obj, method, conf):
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
             return _str_to_dict(self._host.virsh(cmd, *args, **kwargs))
+
+    def stat_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            return _stats(self._host.virsh(cmd, *args, **kwargs),
+                          conf.get('ignore', False))
 
     def none_method(self, *args, **kwargs):
         return self._host.virsh(method, *args, **kwargs)
