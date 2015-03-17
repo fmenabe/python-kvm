@@ -207,6 +207,11 @@ class TimeoutException(Exception):
 def Hypervisor(host):
     unix.isvalid(host)
 
+    try:
+        host.which('virsh')
+    except unix.UnixError:
+        raise KvmError("unable to find 'virsh' command, is this a KVM host?")
+
     class Hypervisor(host.__class__):
         """This object represent an Hypervisor. **host** must be an object of
         type ``unix.Local`` or ``unix.Remote`` (or an object inheriting from
@@ -295,7 +300,7 @@ def Hypervisor(host):
             # Get domains (filtered on state).
             domains = {}
             with self.set_controls(parse=True):
-                stdout  =  self.virsh('list', **virsh_opts)
+                stdout = self.virsh('list', **virsh_opts)
 
                 for line in stdout[2:]:
                     line = line.split()
