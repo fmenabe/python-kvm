@@ -385,6 +385,15 @@ class _Domain(object):
         return etree.tostring(to_xml('domain', conf), pretty_print=True)
 
 
+    def time(self, domain, **kwargs):
+        kwargs.pop('pretty', None)
+        if not kwargs:
+            from datetime import datetime
+            with self._host.set_controls(parse=True):
+                time = self._host.virsh('domtime', domain, **kwargs)[0]
+                return datetime.fromtimestamp(int(time.split(':')[1]))
+        else:
+            return self._host.virsh('domtime', domain, **kwargs)
 
 
     def stop(self, domain, timeout=30, force=False):
