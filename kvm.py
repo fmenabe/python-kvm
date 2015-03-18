@@ -183,6 +183,11 @@ def _stats(lines, ignore=False):
             for elts in [line.split()]}
 
 
+def _list(lines):
+    params = [param.lower() for param in re.split('\s+', lines[0])]
+    return [dict(zip(params, re.split('\s+', line))) for line in lines[2:]]
+
+
 def __add_method(obj, method, conf):
     cmd = conf.get('cmd', method)
     def str_method(self, *args, **kwargs):
@@ -199,6 +204,10 @@ def __add_method(obj, method, conf):
                 kwargs[opt] = False
             return _stats(self._host.virsh(cmd, *args, **kwargs),
                           conf.get('ignore', False))
+
+    def list_method(self, *args, **kwargs):
+        with self._host.set_controls(parse=True):
+            return _list(self._host.virsh(cmd, *args, **kwargs))
 
     def none_method(self, *args, **kwargs):
         return self._host.virsh(method, *args, **kwargs)
