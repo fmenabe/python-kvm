@@ -411,6 +411,21 @@ class _Domain(object):
             return self._host.virsh('domtime', domain, **kwargs)
 
 
+    def cpustats(self, domain, **kwargs):
+        with self._host.set_controls(parse=True):
+            lines = self._host.virsh('cpu-stats', domain, **kwargs)
+            stats = {}
+            cur_cpu = ''
+            for line in lines:
+                if not line.startswith('\t'):
+                    cur_cpu = line[:-1].lower()
+                    stats.setdefault(cur_cpu, {})
+                else:
+                    param, value, unit = line[1:].split()
+                    stats[cur_cpu][param] = '%s %s' % (value, unit)
+            return stats
+
+
     def stop(self, domain, timeout=30, force=False):
         import signal, time
 
