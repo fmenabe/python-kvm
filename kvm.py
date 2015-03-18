@@ -27,6 +27,8 @@ _ITEM_RE = re.compile('^.IX (?P<type>\w+) "(?P<value>.*)"$')
 
 _MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                            'sysinfo': {'type': 'dict'},
+                           'maxvcpus': {'type': 'str',
+                                        'convert': 'int'},
                            'nodeinfo': {'type': 'dict'},
                            'nodecpumap': {'type': 'dict'},
                            'nodecpustats': {'type': 'dict'},
