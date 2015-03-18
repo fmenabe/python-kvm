@@ -10,7 +10,10 @@ import lxml.etree as etree
 from collections import OrderedDict
 
 import sys
-SELF = sys.modules[__name__]
+#_SELF = sys.modules[__name__]
+_BUILTINS = sys.modules['builtins'
+                        if sys.version_info.major == 3
+                        else '__builtin__']
 
 
 # Controls.
@@ -200,7 +203,12 @@ def __add_method(obj, method, conf):
     cmd = conf.get('cmd', method)
     def str_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
-            return self._host.virsh(cmd, *args, **kwargs)[0]
+            result = self._host.virsh(cmd, *args, **kwargs)[0]
+            if 'convert' in conf:
+                try:
+                    return getattr(_BUILTINS, conf['convert'])(result)
+                except ValueError:
+                    return -1 if conf['convert'] == 'int' else result
 
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
