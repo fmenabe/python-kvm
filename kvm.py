@@ -210,8 +210,16 @@ def __add_method(obj, method, conf):
         with self._host.set_controls(parse=True):
             return _list(self._host.virsh(cmd, *args, **kwargs))
 
+    def tune_method(self, *args, **kwargs):
+        ignore_opts = ('config', 'live', 'current')
+        if (not kwargs
+          or (len(kwargs) == 1 and any(opt in kwargs for opt in ignore_opts))):
+            return dict_method(self, *args, **kwargs)
+        else:
+            return none_method(self, *args, **kwargs)
+
     def none_method(self, *args, **kwargs):
-        return self._host.virsh(method, *args, **kwargs)
+        return self._host.virsh(cmd, *args, **kwargs)
 
     def xml_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True):
