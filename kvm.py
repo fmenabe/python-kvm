@@ -108,6 +108,8 @@ _MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                        'pmwakeup': {'cmd': 'dompmwakeup', 'type': 'none'},
                        'attach_device': {'cmd': 'attach-device', 'type': 'none'},
                        'attach_disk': {'cmd': 'attach-disk', 'type': 'none'},
+                       'attach_interface': {'cmd': 'attach-interface',
+                                            'type': 'none'},
 
 
 RUNNING = 'running'
