@@ -112,6 +112,8 @@ _MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                                             'type': 'none'},
                        'detach_device': {'cmd': 'detach-device', 'type': 'none'},
                        'detach_disk': {'cmd': 'detach-disk', 'type': 'none'},
+                       'detach_interface': {'cmd': 'detach-interface',
+                                            'type': 'none'},
 
 
 RUNNING = 'running'
