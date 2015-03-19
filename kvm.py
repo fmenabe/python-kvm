@@ -104,6 +104,7 @@ _MAPPING = {'hypervisor': {'version': {'type': 'dict'},
                        'resume': {'type': 'none'},
                        'ttyconsole': {'type': 'str'},
                        'undefine': {'type': 'none'},
+                       'pmsuspend': {'cmd': 'dompmsuspend', 'type': 'none'},
                        'attach-disk': {'type': 'none'},
 
 
