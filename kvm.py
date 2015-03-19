@@ -186,25 +186,27 @@ def from_xml(elt, force_lists=[]):
 
 
 def to_xml(tag_name, conf):
-    tag = etree.Element(tag_name)
-    for elt, value in conf.items():
-        if elt.startswith('@'):
-            tag.attrib[elt[1:]] = str(value)
-        elif elt == '#text':
-            tag.text = str(value)
-        elif isinstance(value, dict):
-            tag.append(to_xml(elt, value))
-        elif isinstance(value, list):
-            for child in value:
-                tag.append(to_xml(elt, child))
-        elif isinstance(value, bool):
-            tag.append(etree.Element(elt))
-            continue
-        else:
-            child = etree.Element(elt)
-            child.text = value
-            tag.append(child)
-    return tag
+    def parse(tag_name, conf):
+        tag = etree.Element(tag_name)
+        for elt, value in conf.items():
+            if elt.startswith('@'):
+                tag.attrib[elt[1:]] = str(value)
+            elif elt == '#text':
+                tag.text = str(value)
+            elif isinstance(value, dict):
+                tag.append(parse(elt, value))
+            elif isinstance(value, list):
+                for child in value:
+                    tag.append(parse(elt, child))
+            elif isinstance(value, bool):
+                tag.append(etree.Element(elt))
+                continue
+            else:
+                child = etree.Element(elt)
+                child.text = value
+                tag.append(child)
+        return tag
+    return etree.tostring(parse(tag_name, conf), pretty_print=True).decode()
 
 
 def _str_to_dict(lines):
@@ -422,8 +424,8 @@ class _Domain(object):
         self._host = host
 
 
-    def gen_conf(self, conf):
-        return etree.tostring(to_xml('domain', conf), pretty_print=True)
+#    def gen_conf(self, conf):
+#        return etree.tostring(to_xml('domain', conf), pretty_print=True)
 
 
     def time(self, domain, **kwargs):
