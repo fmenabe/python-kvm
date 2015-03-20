@@ -17,7 +17,7 @@ _BUILTINS = sys.modules['builtins'
 
 
 # Controls.
-_CONTROLS = {'parse': False}
+_CONTROLS = {'parse': False, 'ignore_opts': []}
 unix._CONTROLS.update(_CONTROLS)
 
 # Characters in generating strings.
@@ -231,8 +231,9 @@ def _list(lines):
 
 def __add_method(obj, method, conf):
     cmd = conf.get('cmd', method)
+    ignore_opts = conf.pop('disable', [])
     def str_method(self, *args, **kwargs):
-        with self._host.set_controls(parse=True):
+        with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
             result = self._host.virsh(cmd, *args, **kwargs)[0]
             if 'convert' in conf:
                 try:
@@ -241,18 +242,17 @@ def __add_method(obj, method, conf):
                     return -1 if conf['convert'] == 'int' else result
 
     def dict_method(self, *args, **kwargs):
-        with self._host.set_controls(parse=True):
+        with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
             return _str_to_dict(self._host.virsh(cmd, *args, **kwargs))
 
     def stats_method(self, *args, **kwargs):
-        with self._host.set_controls(parse=True):
-            for opt in conf.get('disable', []):
-                kwargs[opt] = False
+        with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
+
             return _stats(self._host.virsh(cmd, *args, **kwargs),
                           conf.get('ignore', False))
 
     def list_method(self, *args, **kwargs):
-        with self._host.set_controls(parse=True):
+        with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
             return _list(self._host.virsh(cmd, *args, **kwargs))
 
     def tune_method(self, *args, **kwargs):
@@ -267,7 +267,7 @@ def __add_method(obj, method, conf):
         return self._host.virsh(cmd, *args, **kwargs)
 
     def xml_method(self, *args, **kwargs):
-        with self._host.set_controls(parse=True):
+        with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
             xml = '\n'.join(self._host.virsh(cmd, *args, **kwargs))
         return from_xml(etree.fromstring(xml), conf.get('lists', []))[conf['key']]
 
@@ -316,6 +316,9 @@ def Hypervisor(host):
             is activated, the value of ``stdout`` is returned or **KvmError**
             exception is raised.
             """
+            if self._ignore_opts:
+                for opt in self._ignore_opts:
+                    kwargs.update({opt: False})
             with self.set_controls(options_place='after', decode='utf-8'):
                 status, stdout, stderr = self.execute('virsh',
                                                       command,
