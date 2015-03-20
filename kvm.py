@@ -11,7 +11,7 @@ import lxml.etree as etree
 from collections import OrderedDict
 
 import sys
-#_SELF = sys.modules[__name__]
+_SELF = sys.modules[__name__]
 _BUILTINS = sys.modules['builtins'
                         if sys.version_info.major == 3
                         else '__builtin__']
@@ -253,16 +253,6 @@ def Hypervisor(host):
                     return stdout[:-1] if not stdout[-1] else stdout
 
 
-        @property
-        def hypervisor(self):
-            return _Hypervisor(weakref.ref(self)())
-
-
-        @property
-        def domain(self):
-            return _Domain(weakref.ref(self)())
-
-
         def list_domains(self, **kwargs):
             """List domains. **kwargs** can contains any option supported by the
             virsh command. It can also contains a **state** argument which is a
@@ -325,81 +315,87 @@ def Hypervisor(host):
             return _Image(weakref.ref(self)())
 
 
+
+    for property_name, property_methods in _MAPPING.items():
+        property_obj = type('_%s' % property_name.capitalize(),
+                            (object,),
+                            dict(__init__=__init))
+
+        for method_name, method_conf in property_methods.items():
+            __add_method(property_obj, method_name, method_conf)
+        #    getattr(Hypervisor, method['name']).__doc__ = '\n'.join(method['doc'])
+
+        for method_name in dir(_SELF):
+            if method_name.startswith('__%s' % property_name):
+                method = method_name.replace('__%s_' % property_name, '')
+                setattr(property_obj, method, getattr(_SELF, method_name))
+        setattr(Hypervisor, property_name, property(property_obj))
+
+
     return Hypervisor()
 
 
-class _Hypervisor(object):
-    def __init__(self, host):
-        self._host = host
-
-for mname, mconf in _MAPPING['hypervisor'].items():
-    __add_method(_Hypervisor, mname, mconf)
+def __init(self, host):
+    self._host = host
 
 
-class _Domain(object):
-    def __init__(self, host):
-        self._host = host
-
-
-#    def gen_conf(self, conf):
-#        return etree.tostring(to_xml('domain', conf), pretty_print=True)
-
-
-    def time(self, domain, **kwargs):
-        kwargs.pop('pretty', None)
-        if not kwargs:
-            from datetime import datetime
-            with self._host.set_controls(parse=True):
-                time = self._host.virsh('domtime', domain, **kwargs)[0]
-                return datetime.fromtimestamp(int(time.split(':')[1]))
-        else:
-            return self._host.virsh('domtime', domain, **kwargs)
-
-
-    def cpustats(self, domain, **kwargs):
+def __domain_time(self, domain, **kwargs):
+    kwargs.pop('pretty', None)
+    if not kwargs:
+        from datetime import datetime
         with self._host.set_controls(parse=True):
-            lines = self._host.virsh('cpu-stats', domain, **kwargs)
-            stats = {}
-            cur_cpu = ''
-            for line in lines:
-                if not line.startswith('\t'):
-                    cur_cpu = line[:-1].lower()
-                    stats.setdefault(cur_cpu, {})
-                else:
-                    param, value, unit = line[1:].split()
-                    stats[cur_cpu][param] = '%s %s' % (value, unit)
-            return stats
+            time = self._host.virsh('domtime', domain, **kwargs)[0]
+            return datetime.fromtimestamp(int(time.split(':')[1]))
+    else:
+        return self._host.virsh('domtime', domain, **kwargs)
 
 
-    def stop(self, domain, timeout=30, force=False):
-        import signal, time
-
-        def timeout_handler(signum, frame):
-            raise TimeoutException()
-
-        # Check guest exists.
-        if domain not in self._host.list_domains(all=True):
-            return [False, '', 'Domain not found']
-
-        self.shutdown(domain)
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout)
-
-        try:
-            while self.state(domain) != SHUTOFF:
-                time.sleep(1)
-        except TimeoutException:
-            if force:
-                status, stdout, stderr = self.destroy(domain)
-                if status:
-                    stderr = 'VM has been destroyed after %ss' % timeout
-                return (status, stdout, stderr)
+def __domain_cpustats(self, domain, **kwargs):
+    with self._host.set_controls(parse=True):
+        lines = self._host.virsh('cpu-stats', domain, **kwargs)
+        stats = {}
+        cur_cpu = ''
+        for line in lines:
+            if not line.startswith('\t'):
+                cur_cpu = line[:-1].lower()
+                stats.setdefault(cur_cpu, {})
             else:
-                return (False, '', 'VM not stopped after %ss' % timeout)
-        finally:
-            signal.signal(signal.SIGALRM, old_handler)
-            signal.alarm(0)
-        return [True, '', '']
+                param, value, unit = line[1:].split()
+                stats[cur_cpu][param] = '%s %s' % (value, unit)
+        return stats
+
+
+def __domain_stop(self, domain, timeout=30, force=False):
+    import signal, time
+
+    def timeout_handler(signum, frame):
+        raise TimeoutException()
+
+    # Check guest exists.
+    if domain not in self._host.list_domains(all=True):
+        return [False, '', 'Domain not found']
+
+    self.shutdown(domain)
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout)
+
+    try:
+        while self.state(domain) != SHUTOFF:
+            print(self.state(domain), SHUTOFF)
+            time.sleep(1)
+    except TimeoutException:
+        if force:
+            status, stdout, stderr = self.destroy(domain)
+            if status:
+                stderr = 'VM has been destroyed after %ss' % timeout
+            return (status, stdout, stderr)
+        else:
+            return (False, '', 'VM not stopped after %ss' % timeout)
+    finally:
+        signal.signal(signal.SIGALRM, old_handler)
+        signal.alarm(0)
+    return [True, '', '']
+
 
 
 class _Image(object):
@@ -465,7 +461,3 @@ class _Image(object):
         kwargs['c'] = False
         kwargs['d'] = '/dev/%s' % device
         return self._host.execute('qemu-nbd', **kwargs)
-
-
-for mname, mconf in _MAPPING['domain'].items():
-    __add_method(_Domain, mname, mconf)
