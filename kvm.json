@@ -1,6 +1,6 @@
 {"hypervisor": {
     "version": {"cmd": "version", "type": "dict"},
-    "sysinfo": {"cmd": "sysinfo", "type": "dict"},
+    "sysinfo": {"cmd": "sysinfo", "type": "xml", "key": "sysinfo"},
     "maxvcpus": {"cmd": "maxvcpus", "type": "str", "convert": "int"},
     "nodeinfo": {"cmd": "nodeinfo", "type": "dict"},
     "nodecpumap": {"cmd": "nodecpumap", "type": "dict"},
