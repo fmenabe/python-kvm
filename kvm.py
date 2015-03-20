@@ -154,6 +154,7 @@ def __add_method(obj, method, conf):
                     return getattr(_BUILTINS, conf['convert'])(result)
                 except ValueError:
                     return -1 if conf['convert'] == 'int' else result
+            return result
 
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
