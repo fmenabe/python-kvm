@@ -322,6 +322,20 @@ def Hypervisor(host):
             return domains
 
 
+        def list_networks(self, **kwargs):
+            with self.set_controls(parse=True):
+                stdout = self.virsh('net-list', **kwargs)
+                networks = {}
+                for line in stdout[2:]:
+                    line = line.split()
+                    name, state, autostart = line[:3]
+                    net = dict(state=state, autostart=_convert(autostart))
+                    if len(line) == 4:
+                        net.update(persistent=_convert(line[3]))
+                    networks.setdefault(name, net)
+            return networks
+
+
         @property
         def image(self):
             return _Image(weakref.ref(self)())
