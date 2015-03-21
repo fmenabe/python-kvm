@@ -77,4 +77,5 @@
     "create": {"cmd": "net-create", "type": "none"},
     "define": {"cmd": "net-define", "type": "none"},
     "destroy": {"cmd": "net-destroy", "type": "none"},
-    "conf": {"cmd": "net-dumpxml", "type": "xml", "key": "network"}}
+    "conf": {"cmd": "net-dumpxml", "type": "xml", "key": "network"},
+    "info": {"cmd": "net-info", "type": "dict"}}
