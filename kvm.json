@@ -76,4 +76,5 @@
     "autostart": {"cmd": "net-autostart", "type": "none"},
     "create": {"cmd": "net-create", "type": "none"},
     "define": {"cmd": "net-define", "type": "none"},
-    "destroy": {"cmd": "net-destroy", "type": "none"}}
+    "destroy": {"cmd": "net-destroy", "type": "none"},
+    "conf": {"cmd": "net-dumpxml", "type": "xml", "key": "network"}}
