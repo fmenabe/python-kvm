@@ -127,7 +127,8 @@ def _str_to_dict(lines):
     def format_key(key):
         return (key.strip().lower()
                    .replace(' ', '_').replace('(', '').replace(')', ''))
-    return {format_key(key): (value or '').strip()
+
+    return {format_key(key): _convert((value or '').strip())
             for line in lines if line
             for key, value in [line.split(':')]}
 
@@ -139,8 +140,8 @@ def _stats(lines, ignore=False):
 
 
 def _list(lines):
-    params = [param.lower() for param in re.split('\s+', lines[0])]
-    return [dict(zip(params, re.split('\s+', line))) for line in lines[2:]]
+    params = [param.lower() for param in re.split('\s+', lines[0])][1:]
+    return [dict(zip(params, re.split('\s+', line)[1:])) for line in lines[2:]]
 
 
 def __add_method(obj, method, conf):
@@ -187,6 +188,16 @@ def __add_method(obj, method, conf):
         return from_xml(etree.fromstring(xml), conf.get('lists', []))[conf['key']]
 
     setattr(obj, method.replace('-', '_'), locals()['%s_method' % conf['type']])
+
+
+def _convert(value):
+    value = value.strip()
+    if value.isdigit():
+        return int(value)
+    for val, map_val in (('yes', True), ('no', False)):
+        if value == val:
+            return map_val
+    return value
 
 
 #
