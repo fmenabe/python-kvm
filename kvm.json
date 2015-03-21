@@ -80,4 +80,5 @@
     "conf": {"cmd": "net-dumpxml", "type": "xml", "key": "network"},
     "info": {"cmd": "net-info", "type": "dict"},
     "name": {"cmd": "net-name", "type": "str"},
-    "start": {"cmd": "net-start", "type": "none"}}
+    "start": {"cmd": "net-start", "type": "none"},
+    "undefine": {"cmd": "net-undefine", "type": "none"}}
