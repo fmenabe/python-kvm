@@ -73,4 +73,5 @@
     "detach_interface": {"cmd": "detach-interface", "type": "none"},
     "update_device": {"cmd": "update-device", "type": "none"}}}
  "net": {
-    "autostart": {"cmd": "net-autostart", "type": "none"}}
+    "autostart": {"cmd": "net-autostart", "type": "none"},
+    "create": {"cmd": "net-create", "type": "none"}}
