@@ -78,4 +78,5 @@
     "define": {"cmd": "net-define", "type": "none"},
     "destroy": {"cmd": "net-destroy", "type": "none"},
     "conf": {"cmd": "net-dumpxml", "type": "xml", "key": "network"},
-    "info": {"cmd": "net-info", "type": "dict"}}
+    "info": {"cmd": "net-info", "type": "dict"},
+    "name": {"cmd": "net-name", "type": "str"}}
