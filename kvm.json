@@ -82,4 +82,5 @@
     "name": {"cmd": "net-name", "type": "str"},
     "start": {"cmd": "net-start", "type": "none"},
     "undefine": {"cmd": "net-undefine", "type": "none"},
-    "uuid": {"cmd": "net-uuid", "type": "str"}}}
+    "uuid": {"cmd": "net-uuid", "type": "str"},
+    "update": {"cmd": "net-update", "type": "none"}}}
