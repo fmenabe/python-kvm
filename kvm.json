@@ -88,4 +88,5 @@
  "iface": {
     "bridge": {"cmd": "iface-bridge", "type": "none"},
     "define": {"cmd": "iface-define", "type": "none"},
-    "destroy": {"cmd": "iface-destroy", "type": "none"}}}
+    "destroy": {"cmd": "iface-destroy", "type": "none"},
+    "conf": {"cmd": "iface-dumpxml", "type": "xml", "key": "interface"},
