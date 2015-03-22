@@ -90,3 +90,4 @@
     "define": {"cmd": "iface-define", "type": "none"},
     "destroy": {"cmd": "iface-destroy", "type": "none"},
     "conf": {"cmd": "iface-dumpxml", "type": "xml", "key": "interface"},
+    "name": {"cmd": "iface-name", "type": "str"}}}
