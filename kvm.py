@@ -336,6 +336,14 @@ def Hypervisor(host):
             return networks
 
 
+        def list_interfaces(self, **kwargs):
+            with self.set_controls(parse=True):
+                stdout = self.virsh('iface-list', **kwargs)
+                return {name: {'state': state, 'mac': mac}
+                        for line in self.virsh('iface-list', **kwargs)[2:]
+                        for name, state, mac in [line.split()]}
+
+
         @property
         def image(self):
             return _Image(weakref.ref(self)())
