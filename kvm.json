@@ -78,9 +78,12 @@
     "define": {"cmd": "net-define", "type": "none"},
     "destroy": {"cmd": "net-destroy", "type": "none"},
     "conf": {"cmd": "net-dumpxml", "type": "xml", "key": "network"},
+#    "event": {},
     "info": {"cmd": "net-info", "type": "dict"},
     "name": {"cmd": "net-name", "type": "str"},
     "start": {"cmd": "net-start", "type": "none"},
     "undefine": {"cmd": "net-undefine", "type": "none"},
     "uuid": {"cmd": "net-uuid", "type": "str"},
-    "update": {"cmd": "net-update", "type": "none"}}}
+    "update": {"cmd": "net-update", "type": "none"}}
+ "iface": {
+    "bridge": {"cmd": "iface-bridge", "type": "none"}}}
