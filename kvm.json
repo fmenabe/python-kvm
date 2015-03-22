@@ -93,4 +93,5 @@
     "name": {"cmd": "iface-name", "type": "str"},
     "mac": {"cmd": "iface-mac", "type": "str"},
     "start": {"cmd": "iface-start", "type": "none"},
-    "unbridge": {"cmd": "iface-unbridge", "type": "none"}}}
+    "unbridge": {"cmd": "iface-unbridge", "type": "none"},
+    "undefine": {"cmd": "iface-undefine", "type": "none"}}}
