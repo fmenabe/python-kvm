@@ -91,4 +91,5 @@
     "destroy": {"cmd": "iface-destroy", "type": "none"},
     "conf": {"cmd": "iface-dumpxml", "type": "xml", "key": "interface"},
     "name": {"cmd": "iface-name", "type": "str"},
-    "mac": {"cmd": "iface-mac", "type": "str"}}}
+    "mac": {"cmd": "iface-mac", "type": "str"},
+    "start": {"cmd": "iface-start", "type": "none"}}}
