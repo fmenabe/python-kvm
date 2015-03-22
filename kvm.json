@@ -86,4 +86,5 @@
     "uuid": {"cmd": "net-uuid", "type": "str"},
     "update": {"cmd": "net-update", "type": "none"}}
  "iface": {
-    "bridge": {"cmd": "iface-bridge", "type": "none"}}}
+    "bridge": {"cmd": "iface-bridge", "type": "none"},
+    "define": {"cmd": "iface-define", "type": "none"}}}
