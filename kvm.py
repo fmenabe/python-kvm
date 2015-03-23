@@ -123,14 +123,21 @@ def to_xml(tag_name, conf):
     return etree.tostring(parse(tag_name, conf), pretty_print=True).decode()
 
 
-def _str_to_dict(lines):
+def _dict(lines):
     def format_key(key):
         return (key.strip().lower()
                    .replace(' ', '_').replace('(', '').replace(')', ''))
 
-    return {format_key(key): _convert((value or '').strip())
-            for line in lines if line
-            for key, value in [line.split(':')]}
+    elts = {}
+    for line in lines:
+        if not line:
+            continue
+        try:
+            key, value = line.split(':')
+        except ValueError:
+            key, value = line.split()
+        elts[format_key(key)] = _convert(value or '')
+    return elts
 
 
 def _stats(lines, ignore=False):
@@ -159,7 +166,7 @@ def __add_method(obj, method, conf):
 
     def dict_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
-            return _str_to_dict(self._host.virsh(cmd, *args, **kwargs))
+            return _dict(self._host.virsh(cmd, *args, **kwargs))
 
     def stats_method(self, *args, **kwargs):
         with self._host.set_controls(parse=True, ignore_opts=ignore_opts):
@@ -415,7 +422,6 @@ def __domain_stop(self, domain, timeout=30, force=False):
 
     try:
         while self.state(domain) != SHUTOFF:
-            print(self.state(domain), SHUTOFF)
             time.sleep(1)
     except TimeoutException:
         if force:
@@ -462,7 +468,7 @@ class _Image(object):
         status, stdout, stderr = self._host.execute('qemu-img info', path, **kwargs)
         if not status:
             raise OSError(stderr)
-        return _str_to_dict(stdout.splitlines())
+        return _dict(stdout.splitlines())
 
 
     def map(self, path, **kwargs):
