@@ -380,6 +380,23 @@ def __init(self, host):
     self._host = host
 
 
+def __hypervisor_sysinfo(self):
+    entry = lambda value: {elt['@name']: elt['#text'] for elt in value}
+
+    with self._host.set_controls(parse=True):
+        xml = '\n'.join(self._host.virsh('sysinfo'))
+        sysinfo = from_xml(etree.fromstring(xml))['sysinfo']
+        result = {}
+        for elt, elt_entries in sysinfo.items():
+            if elt.startswith('@'):
+                result[elt[1:]] = elt_entries
+                continue
+            result.update({elt: [entry(value['entry']) for value in elt_entries]
+                                if isinstance(elt_entries, list)
+                                else entry(elt_entries['entry'])})
+        return result
+
+
 def __domain_time(self, domain, **kwargs):
     kwargs.pop('pretty', None)
     if not kwargs:
