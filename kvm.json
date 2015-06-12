@@ -83,7 +83,7 @@
     "start": {"cmd": "net-start", "type": "none"},
     "undefine": {"cmd": "net-undefine", "type": "none"},
     "uuid": {"cmd": "net-uuid", "type": "str"},
-    "update": {"cmd": "net-update", "type": "none"}}
+    "update": {"cmd": "net-update", "type": "none"}},
  "iface": {
     "bridge": {"cmd": "iface-bridge", "type": "none"},
     "define": {"cmd": "iface-define", "type": "none"},
