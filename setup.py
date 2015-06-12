@@ -11,11 +11,12 @@ setup (
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
     py_modules=['kvm'],
-    licence='LICENCE.txt',
     data_files=[('', ['kvm.json'])],
+    license='MIT License',
     description='An API for managing KVM host.',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     install_requires=[
-        'unix'
+        'unix',
+        'lxml'
     ],
 )
