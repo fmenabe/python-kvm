@@ -2,12 +2,9 @@
 from distutils.core import setup
 from distutils.command.install import INSTALL_SCHEMES
 
-for scheme in INSTALL_SCHEMES.values():
-    scheme['data'] = scheme['purelib']
-
 setup (
     name='kvm',
-    version='0.1',
+    version='1.0',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
     py_modules=['kvm'],
@@ -19,4 +16,13 @@ setup (
         'unix',
         'lxml'
     ],
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: System Administrators',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
+        'Operating System :: Unix',
+        'Topic :: System :: Systems Administration']
 )
