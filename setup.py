@@ -2,13 +2,15 @@
 from distutils.core import setup
 from distutils.command.install import INSTALL_SCHEMES
 
+
 setup (
     name='kvm',
-    version='1.0',
+    version='1.0.4',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
-    py_modules=['kvm'],
-    data_files=[('', ['kvm.json'])],
+    packages=['kvm'],
+    package_dir={'kvm': 'kvm'},
+    package_data={'kvm': ['kvm.json']},
     license='MIT License',
     description='An API for managing KVM host.',
     long_description=open('README.rst').read(),

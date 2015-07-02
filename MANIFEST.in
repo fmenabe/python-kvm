@@ -1,2 +1,2 @@
-include kvm.json
+include kvm/kvm.json
 include README.rst
