@@ -95,8 +95,8 @@ disks manipulations need *nbd* module to be loaded so it is better to use an
 
 Releases notes
 --------------
-1.0 (2015-07-02)
-~~~~~~~~~~~~~~~~
+1.0.1 (2015-07-02)
+~~~~~~~~~~~~~~~~~~
     * Wrapper to ''virsh'' command.
     * Each type (domain, nodedev, net, ...) has one command for listing and a property regrouping commands to apply to one element.
     * Properties:

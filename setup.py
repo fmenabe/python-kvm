@@ -4,7 +4,7 @@ from distutils.command.install import INSTALL_SCHEMES
 
 setup (
     name='kvm',
-    version='1.0',
+    version='1.0.1',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
     py_modules=['kvm'],
