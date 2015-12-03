@@ -84,7 +84,7 @@ def from_xml(elt, force_lists=[]):
         for child in childs:
             child = from_xml(child, force_lists)
             child_tag = list(child.keys())[0]
-            if child_tag in force_lists:
+            if child_tag not in elts and child_tag in force_lists:
                 elts[child_tag] = []
             if child_tag  in elts:
                 if not isinstance(elts[child_tag], list):
