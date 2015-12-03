@@ -5,7 +5,7 @@ from distutils.command.install import INSTALL_SCHEMES
 
 setup (
     name='kvm',
-    version='1.0.4',
+    version='1.0.5',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
     packages=['kvm'],
@@ -25,6 +25,7 @@ setup (
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Operating System :: Unix',
         'Topic :: System :: Systems Administration']
 )
