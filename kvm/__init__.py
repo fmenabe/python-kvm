@@ -356,9 +356,8 @@ def Hypervisor(host):
             return _Image(weakref.ref(self)())
 
 
-
     for property_name, property_methods in _MAPPING.items():
-        property_obj = type('_%s' % property_name.capitalize(),
+        property_obj = type('_%s' % str(property_name).capitalize(),
                             (object,),
                             dict(__init__=__init))
 
