@@ -11,7 +11,8 @@
     "domcapabilities": {"cmd": "domcapabilities", "type": "xml", "key": "domainCapabilities"},
     "freecell": {"cmd": "freecell", "type": "dict"},
     "freepages": {"cmd": "freepages", "type": "dict"},
-    "allocpages": {"cmd": "allocpages", "type": "none"}},
+    "allocpages": {"cmd": "allocpages", "type": "none"},
+    "sysinfo": {"cmd": "sysinfo", "type": "xml", "key": "sysinfo"}},
  "domain": {
     "autostart": {"cmd": "autostart", "type": "none"},
     "inject_nmi": {"cmd": "inject_nmi", "type": "none"},
