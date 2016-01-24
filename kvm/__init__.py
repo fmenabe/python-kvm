@@ -59,14 +59,12 @@ def gen_uuid():
                      ''.join([random.choice(_CHOICES) for _ in range(0, 4)]),
                      ''.join([random.choice(_CHOICES) for _ in range(0, 12)])))
 
-
 def gen_mac():
     """Generate a random mac address."""
     return ':'.join(('54', '52', '00',
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)]),
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)]),
                      ''.join([random.choice(_CHOICES) for _ in range(0, 2)])))
-
 
 def from_xml(elt, force_lists=[]):
     """Recursive function that transform an XML element to a dictionnary.
@@ -105,7 +103,6 @@ def from_xml(elt, force_lists=[]):
     result[tag] = value
     return result
 
-
 def to_xml(tag_name, conf):
     def parse(tag_name, conf):
         tag = etree.Element(tag_name)
@@ -129,7 +126,6 @@ def to_xml(tag_name, conf):
         return tag
     return etree.tostring(parse(tag_name, conf), pretty_print=True).decode()
 
-
 def _dict(lines):
     def format_key(key):
         return (key.strip().lower()
@@ -146,17 +142,14 @@ def _dict(lines):
         elts[format_key(key)] = _convert(value or '')
     return elts
 
-
 def _stats(lines, ignore=False):
     return {elts[1 if ignore else 0]: elts[2 if ignore else 1]
             for line in lines if line
             for elts in [line.split()]}
 
-
 def _list(lines):
     params = [param.lower() for param in re.split('\s+', lines[0])][1:]
     return [dict(zip(params, re.split('\s+', line)[1:])) for line in lines[2:]]
-
 
 def __add_method(obj, method, conf):
     cmd = conf.get('cmd', method)
@@ -203,7 +196,6 @@ def __add_method(obj, method, conf):
 
     setattr(obj, method.replace('-', '_'), locals()['%s_method' % conf['type']])
 
-
 def _convert(value):
     value = value.strip()
     if value.isdigit():
@@ -220,7 +212,6 @@ def _convert(value):
 class KvmError(Exception):
     """Main exception for this module."""
     pass
-
 
 class TimeoutException(Exception):
     """Exception raise when a timeout is exceeded."""
@@ -249,7 +240,6 @@ def Hypervisor(host):
             for control, value in _CONTROLS.items():
                 setattr(self, '_%s' % control, value)
 
-
         def virsh(self, command, *args, **kwargs):
             """Wrap the execution of the virsh command. It set a control for
             putting options after the virsh **command**. If **parse** control
@@ -259,11 +249,9 @@ def Hypervisor(host):
             if self._ignore_opts:
                 for opt in self._ignore_opts:
                     kwargs.update({opt: False})
+
             with self.set_controls(options_place='after', decode='utf-8'):
-                status, stdout, stderr = self.execute('virsh',
-                                                      command,
-                                                      *args,
-                                                      **kwargs)
+                status, stdout, stderr = self.execute('virsh', command, *args, **kwargs)
                 # Clean stdout and stderr.
                 if stdout:
                     stdout = stdout.rstrip('\n')
@@ -277,7 +265,6 @@ def Hypervisor(host):
                 else:
                     stdout = stdout.splitlines()
                     return stdout[:-1] if not stdout[-1] else stdout
-
 
         def list_domains(self, **kwargs):
             """List domains. **kwargs** can contains any option supported by the
@@ -335,7 +322,6 @@ def Hypervisor(host):
 
             return domains
 
-
         def list_networks(self, **kwargs):
             with self.set_controls(parse=True):
                 stdout = self.virsh('net-list', **kwargs)
@@ -349,7 +335,6 @@ def Hypervisor(host):
                     networks.setdefault(name, net)
             return networks
 
-
         def list_interfaces(self, **kwargs):
             with self.set_controls(parse=True):
                 stdout = self.virsh('iface-list', **kwargs)
@@ -361,7 +346,6 @@ def Hypervisor(host):
         @property
         def image(self):
             return _Image(weakref.ref(self)())
-
 
     for property_name, property_methods in _MAPPING.items():
         property_obj = type('_%s' % str(property_name).capitalize(),
@@ -378,13 +362,11 @@ def Hypervisor(host):
                 setattr(property_obj, method, getattr(_SELF, method_name))
         setattr(Hypervisor, property_name, property(property_obj))
 
-
     return Hypervisor()
 
 
 def __init(self, host):
     self._host = host
-
 
 def __hypervisor_sysinfo(self):
     entry = lambda value: {elt['@name']: elt['#text'] for elt in value}
@@ -419,7 +401,6 @@ def __domain_time(self, domain, **kwargs):
     else:
         return self._host.virsh('domtime', domain, **kwargs)
 
-
 def __domain_cpustats(self, domain, **kwargs):
     with self._host.set_controls(parse=True):
         lines = self._host.virsh('cpu-stats', domain, **kwargs)
@@ -433,7 +414,6 @@ def __domain_cpustats(self, domain, **kwargs):
                 param, value, unit = line[1:].split()
                 stats[cur_cpu][param] = '%s %s' % (value, unit)
         return stats
-
 
 def __domain_stop(self, domain, timeout=30, force=False):
     import signal, time
@@ -466,32 +446,25 @@ def __domain_stop(self, domain, timeout=30, force=False):
     return [True, '', '']
 
 
-
 class _Image(object):
     def __init__(self, host):
         self._host = host
 
-
     def check(self, path, **kwargs):
         return self._host.execute('qemu-img check', path, **kwargs)
-
 
     def create(self, path, size, **kwargs):
         return self._host.execute('qemu-img create', path, size, **kwargs)
 
-
     def commit(self, path, **kwargs):
         return self._host.execute('qemu-img commit', path, **kwargs)
-
 
     def compare(self, *paths, **kwargs):
         return self._host.execute('qemu-img compare', *paths, **kwargs)
 
-
     def convert(self, src_path, dst_path, **kwargs):
         with self._host.set_controls(options_place='after'):
             return self._host.execute('qemu-img convert', src_path, dst_path, **kwargs)
-
 
     def info(self, path, **kwargs):
         status, stdout, stderr = self._host.execute('qemu-img info', path, **kwargs)
@@ -499,32 +472,25 @@ class _Image(object):
             raise OSError(stderr)
         return _dict(stdout.splitlines())
 
-
     def map(self, path, **kwargs):
         return self._host.execute('qemu-img map', path, **kwargs)
-
 
     def snapshot(self, path, **kwargs):
         return self._host.execute('qemu-img snapshot', path, **kwargs)
 
-
     def rebase(self, path, **kwargs):
         return self._host.execute('qemu-img rebase', path, **kwargs)
-
 
     def resize(self, path, size):
         return self._host.execute('qemu-img resize', path, size)
 
-
     def amend(self, path, **kwargs):
         return self._host.execute('qemu-img amend', path, **kwargs)
-
 
     def load(self, path, device='nbd0', **kwargs):
         kwargs['c'] = '/dev/%s' % device
         kwargs['d'] = False
         return self._host.execute('qemu-nbd', path, **kwargs)
-
 
     def unload(self, device='nbd0', **kwargs):
         kwargs['c'] = False
