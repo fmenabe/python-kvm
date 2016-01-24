@@ -1,8 +1,9 @@
 {"hypervisor": {
     "version": {"cmd": "version", "type": "dict"},
-    "maxvcpus": {"cmd": "maxvcpus", "type": "str", "convert": "int"},
+    "uri": {"cmd": "uri", "type": "str"},
     "nodeinfo": {"cmd": "nodeinfo", "type": "dict"},
     "nodecpumap": {"cmd": "nodecpumap", "type": "dict"},
+    "maxvcpus": {"cmd": "maxvcpus", "type": "str", "convert": "int"},
     "nodecpustats": {"cmd": "nodecpustats", "type": "dict"},
     "nodememstats": {"cmd": "nodememstats", "type": "dict"},
     "nodesuspend": {"cmd": "nodesuspend", "type": "none"},
