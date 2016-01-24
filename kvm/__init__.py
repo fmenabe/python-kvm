@@ -138,7 +138,10 @@ def _dict(lines):
         try:
             key, value = line.split(':')
         except ValueError:
-            key, value = line.split()
+            try:
+                key, value = line.split()
+            except ValueError:
+                continue
         elts[format_key(key)] = _convert(value or '')
     return elts
 
