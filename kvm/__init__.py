@@ -41,6 +41,13 @@ DYING = 'dying'
 SUSPENDED = 'pmsuspended'
 
 
+def pprint(value):
+    return {key: pprint(val) if isinstance(val, (OrderedDict, dict))
+                             else [pprint(elt) for elt in val]
+                                  if isinstance(val, list)
+                                  else val
+            for key, val in value.items()}
+
 #
 # Functions for generating datas.
 #
