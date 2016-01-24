@@ -402,6 +402,12 @@ def __hypervisor_sysinfo(self):
                                 else entry(elt_entries['entry'])})
         return result
 
+def __hypervisor_node_memory_tune(self, **kwargs):
+    if not kwargs:
+        with self._host.set_controls(parse=True):
+            return _dict(self._host.virsh('node-memory-tune')[1:])
+    else:
+        return self._host.virsh('node-memory-tune', **kwargs)
 
 def __domain_time(self, domain, **kwargs):
     kwargs.pop('pretty', None)

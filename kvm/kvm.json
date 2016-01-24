@@ -7,7 +7,6 @@
     "nodecpustats": {"cmd": "nodecpustats", "type": "dict"},
     "nodememstats": {"cmd": "nodememstats", "type": "dict"},
     "nodesuspend": {"cmd": "nodesuspend", "type": "none"},
-    "node_memory_tune": {"cmd": "node-memory-tune", "type": "none"},
     "capabilities": {"cmd": "capabilities", "type": "xml",  "key": "capabilities"},
     "domcapabilities": {"cmd": "domcapabilities", "type": "xml", "key": "domainCapabilities"},
     "freecell": {"cmd": "freecell", "type": "dict"},
