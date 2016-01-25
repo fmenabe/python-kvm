@@ -98,4 +98,5 @@
     "rollback": {"cmd": "iface-rollback", "type": "none"}},
   "pool": {
     "autostart": {"cmd": "pool-autostart", "type": "none"},
+    "build": {"cmd": "pool-build", "type": "none"},
     "define": {"cmd": "pool-define", "type": "none"}}}
