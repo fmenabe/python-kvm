@@ -103,5 +103,6 @@
     "conf": {"cmd": "pool-dumpxml", "type": "xml", "key": "pool"},
     "info": {"cmd": "pool-info", "type": "dict"},
     "name": {"cmd": "pool-name", "type": "str"},
+    "refresh": {"cmd": "pool-refresh", "type": "none"},
     "start": {"cmd": "pool-start", "type": "none"},
     "uuid": {"cmd": "pool-uuid", "type": "str"}}}
