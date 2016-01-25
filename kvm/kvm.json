@@ -122,4 +122,5 @@
     "download": {"cmd": "vol-download", "type": "none"},
     "wipe": {"cmd": "vol-wipe", "type": "none"},
     "conf": {"cmd": "vol-dumpxml", "type": "xml", "key": "volume"},
-    "info": {"cmd": "vol-info", "type": "dict"}}}
+    "info": {"cmd": "vol-info", "type": "dict"},
+    "path": {"cmd": "vol-path", "type": "str"}}}
