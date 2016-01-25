@@ -124,4 +124,5 @@
     "conf": {"cmd": "vol-dumpxml", "type": "xml", "key": "volume"},
     "info": {"cmd": "vol-info", "type": "dict"},
     "path": {"cmd": "vol-path", "type": "str"},
-    "name": {"cmd": "vol-name", "type": "str"}}}
+    "name": {"cmd": "vol-name", "type": "str"},
+    "key": {"cmd": "vol-key", "type": "str"}}}
