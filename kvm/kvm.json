@@ -106,4 +106,5 @@
     "name": {"cmd": "pool-name", "type": "str"},
     "refresh": {"cmd": "pool-refresh", "type": "none"},
     "start": {"cmd": "pool-start", "type": "none"},
+    "undefine": {"cmd": "pool-undefine", "type": "none"},
     "uuid": {"cmd": "pool-uuid", "type": "str"}}}
