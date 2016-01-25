@@ -361,6 +361,21 @@ def Hypervisor(host):
                     pools.setdefault(line[0], pool)
                 return pools
 
+        def list_volumes(self, pool, **kwargs):
+            with self.set_controls(parse=True):
+                stdout = self.virsh('vol-list', pool, **kwargs)
+                volumes = {}
+                for line in stdout[2:]:
+                    line = line.split()
+                    name, path = line[:2]
+                    volume = dict(path=path)
+                    if len(line) > 2:
+                        volume.update(type=line[2],
+                                      capacity=' '.join(line[3:5]),
+                                      allocation=' '.join(line[5:7]))
+                    volumes.setdefault(name, volume)
+                return volumes
+
         @property
         def image(self):
             return _Image(weakref.ref(self)())
