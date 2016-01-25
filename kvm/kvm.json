@@ -99,6 +99,7 @@
   "pool": {
     "autostart": {"cmd": "pool-autostart", "type": "none"},
     "build": {"cmd": "pool-build", "type": "none"},
+    "create": {"cmd": "pool-create", "type": "none"},
     "define": {"cmd": "pool-define", "type": "none"},
     "define_as": {"cmd": "pool-define-as", "type": "none"},
     "destroy": {"cmd": "pool-destroy", "type": "none"},
