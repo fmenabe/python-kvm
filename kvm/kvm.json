@@ -97,4 +97,5 @@
     "commit": {"cmd": "iface-commit", "type": "none"},
     "rollback": {"cmd": "iface-rollback", "type": "none"}},
   "pool": {
+    "autostart": {"cmd": "pool-autostart", "type": "none"},
     "define": {"cmd": "pool-define", "type": "none"}}}
