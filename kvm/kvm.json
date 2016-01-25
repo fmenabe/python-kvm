@@ -113,4 +113,5 @@
     "undefine": {"cmd": "pool-undefine", "type": "none"},
     "uuid": {"cmd": "pool-uuid", "type": "str"}},
   "volume": {
-    "create": {"cmd": "vol-create", "type": "none"}}}
+    "create": {"cmd": "vol-create", "type": "none"},
+    "create_from": {"cmd": "vol-create-from", "type": "none"}}}
