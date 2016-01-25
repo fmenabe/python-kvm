@@ -95,4 +95,6 @@
     "undefine": {"cmd": "iface-undefine", "type": "none"},
     "begin": {"cmd": "iface-begin", "type": "none"},
     "commit": {"cmd": "iface-commit", "type": "none"},
-    "rollback": {"cmd": "iface-rollback", "type": "none"}}}
+    "rollback": {"cmd": "iface-rollback", "type": "none"}},
+  "pool": {
+    "define": {"cmd": "pool-define", "type": "none"}}}
