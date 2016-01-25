@@ -114,4 +114,5 @@
     "uuid": {"cmd": "pool-uuid", "type": "str"}},
   "volume": {
     "create": {"cmd": "vol-create", "type": "none"},
-    "create_from": {"cmd": "vol-create-from", "type": "none"}}}
+    "create_from": {"cmd": "vol-create-from", "type": "none"},
+    "create_as": {"cmd": "vol-create-as", "type": "none"}}}
