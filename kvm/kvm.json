@@ -116,4 +116,5 @@
     "create": {"cmd": "vol-create", "type": "none"},
     "create_from": {"cmd": "vol-create-from", "type": "none"},
     "create_as": {"cmd": "vol-create-as", "type": "none"},
-    "clone": {"cmd": "vol-clone", "type": "none"}}}
+    "clone": {"cmd": "vol-clone", "type": "none"},
+    "delete": {"cmd": "vol-delete", "type": "none"}}}
