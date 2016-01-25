@@ -102,4 +102,5 @@
     "define": {"cmd": "pool-define", "type": "none"},
     "conf": {"cmd": "pool-dumpxml", "type": "xml", "key": "pool"},
     "info": {"cmd": "pool-info", "type": "dict"},
-    "start": {"cmd": "pool-start", "type": "none"}}}
+    "start": {"cmd": "pool-start", "type": "none"},
+    "uuid": {"cmd": "pool-uuid", "type": "str"}}}
