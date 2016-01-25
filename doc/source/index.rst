@@ -11,6 +11,7 @@ Welcome to kvm's documentation!
 
     Overview <overview>
     API <api>
+    Examples <examples>
 
 Indices and tables
 ==================
