@@ -120,4 +120,5 @@
     "delete": {"cmd": "vol-delete", "type": "none"},
     "upload": {"cmd": "vol-upload", "type": "none"},
     "download": {"cmd": "vol-download", "type": "none"},
-    "wipe": {"cmd": "vol-wipe", "type": "none"}}}
+    "wipe": {"cmd": "vol-wipe", "type": "none"},
+    "conf": {"cmd": "vol-dumpxml", "type": "xml", "key": "volume"}}}
