@@ -345,6 +345,21 @@ def Hypervisor(host):
                         for line in self.virsh('iface-list', **kwargs)[2:]
                         for name, state, mac in [line.split()]}
 
+        def list_pools(self, **kwargs):
+            with self.set_controls(parse=True):
+                stdout = self.virsh('pool-list', **kwargs)
+                pools = {}
+                for line in stdout[2:]:
+                    line = line.split()
+                    name, state, autostart = line[:3]
+                    pool = dict(state=state, autostart=_convert(autostart))
+                    if len(line) > 3:
+                        pool.update(persistent=_convert(line[3]),
+                                    capacity=' '.join(line[4:6]),
+                                    allocation=' '.join(line[6:8]),
+                                    available=' '.join(line[8:10]))
+                    pools.setdefault(line[0], pool)
+                return pools
 
         @property
         def image(self):
