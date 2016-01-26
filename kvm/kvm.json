@@ -131,4 +131,5 @@
     "define": {"cmd": "secret-define", "type": "none"},
     "conf": {"cmd": "secret-dumpxml", "type": "xml", "key": "secret"},
     "set_value": {"cmd": "secret-set-value", "type": "none"},
-    "get_value": {"cmd": "secret-get-value", "type": "str"}}}
+    "get_value": {"cmd": "secret-get-value", "type": "str"},
+    "undefine": {"cmd": "secret-undefine", "type": "none"}}}
