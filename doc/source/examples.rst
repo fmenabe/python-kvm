@@ -650,3 +650,63 @@ Upload/Download
 
     >>> host.listdir('/vm')
     ['disk', 'modele-trusty.qcow2', 'new.qcow2']
+
+Secrets
+=======
+Define
+~~~~~~
+.. code::
+
+    >>> secret = {'@ephemeral': 'no',
+    ...:          '@private': 'no',
+    ...:          'uuid': kvm.gen
+    ...:          'uuid': kvm.gen_uuid(),
+    ...:          'usage': {'@type': 'volume',
+    ...:                    'volume': '/vm/disk/encrypted.qcow2'}}
+
+    >>> with host.open('/tmp/secret.xml', 'w') as fhandler:
+    ...:     fhandler.write(kvm.to_xml('secret', secret))
+    ...:
+
+    >>> host.secret.define('/tmp/secret.xml')
+    (True, 'Secret 6d14f73a-1087-7180-792d-8d80fc6b55ec created', '')
+
+List
+~~~~
+.. code::
+
+    >>> host.list_secrets()
+    {'6d14f73a-1087-7180-792d-8d80fc6b55ec': 'volume /vm/disk/encrypted.qcow2'}
+
+Conf
+~~~~
+.. code::
+
+    >>> kvm.pprint(host.secret.conf('6d14f73a-1087-7180-792d-8d80fc6b55ec'))
+    {'@ephemeral': 'no',
+     '@private': 'no',
+     'usage': {'@type': 'volume', 'volume': '/vm/disk/encrypted.qcow2'},
+     'uuid': '6d14f73a-1087-7180-792d-8d80fc6b55ec'}
+
+Set value
+~~~~~~~~~
+.. code::
+
+    >>> import base64
+    >>> passphrase = base64.b64encode(b'passphrase').decode()
+    >>> host.secret.set_value('6d14f73a-1087-7180-792d-8d80fc6b55ec', passphrase)
+    (True, 'Secret value set', '')
+
+Get value
+~~~~~~~~~
+.. code::
+
+    >>> base64.b64decode(host.secret.get_value('6d14f73a-1087-7180-792d-8d80fc6b55ec')).decode()
+    'passphrase'
+
+Undefine
+~~~~~~~~~
+.. code::
+
+	>>> host.secret.undefine('6d14f73a-1087-7180-792d-8d80fc6b55ec')
+	(True, 'Secret 6d14f73a-1087-7180-792d-8d80fc6b55ec deleted', '')
