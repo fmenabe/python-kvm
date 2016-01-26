@@ -128,4 +128,5 @@
     "key": {"cmd": "vol-key", "type": "str"},
     "resize": {"cmd": "vol-resize", "type": "none"}},
   "secret": {
-    "define": {"cmd": "secret-define", "type": "none"}}}
+    "define": {"cmd": "secret-define", "type": "none"},
+    "conf": {"cmd": "secret-dumpxml", "type": "xml", "key": "secret"}}}
