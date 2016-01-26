@@ -129,4 +129,5 @@
     "resize": {"cmd": "vol-resize", "type": "none"}},
   "secret": {
     "define": {"cmd": "secret-define", "type": "none"},
-    "conf": {"cmd": "secret-dumpxml", "type": "xml", "key": "secret"}}}
+    "conf": {"cmd": "secret-dumpxml", "type": "xml", "key": "secret"},
+    "set_value": {"cmd": "secret-set-value", "type": "none"}}}
