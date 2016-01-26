@@ -126,4 +126,6 @@
     "path": {"cmd": "vol-path", "type": "str"},
     "name": {"cmd": "vol-name", "type": "str"},
     "key": {"cmd": "vol-key", "type": "str"},
-    "resize": {"cmd": "vol-resize", "type": "none"}}}
+    "resize": {"cmd": "vol-resize", "type": "none"}},
+  "secret": {
+    "define": {"cmd": "secret-define", "type": "none"}}}
