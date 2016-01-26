@@ -83,7 +83,7 @@
     "undefine": {"cmd": "net-undefine", "type": "none"},
     "uuid": {"cmd": "net-uuid", "type": "str"},
     "update": {"cmd": "net-update", "type": "none"}},
- "iface": {
+ "interface": {
     "bridge": {"cmd": "iface-bridge", "type": "none"},
     "define": {"cmd": "iface-define", "type": "none"},
     "destroy": {"cmd": "iface-destroy", "type": "none"},
