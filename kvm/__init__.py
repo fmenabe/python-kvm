@@ -376,6 +376,15 @@ def Hypervisor(host):
                     volumes.setdefault(name, volume)
                 return volumes
 
+        def list_secrets(self, **kwargs):
+            with self.set_controls(parse=True):
+                stdout = self.virsh('secret-list', **kwargs)
+                secrets = {}
+                for line in stdout[2:]:
+                    uuid, *usage = line.split()
+                    secrets.setdefault(uuid, ' '.join(usage))
+                return secrets
+
         @property
         def image(self):
             return _Image(weakref.ref(self)())
