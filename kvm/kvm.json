@@ -138,4 +138,5 @@
     "create_as": {"cmd": "snapshot-create-as", "type": "none"},
     "info": {"cmd": "snapshot-info", "type": "dict"},
     "conf": {"cmd": "snapshot-dumpxml", "type": "xml", "key": "domainsnapshot"},
-    "parent": {"cmd": "snapshot-parent", "type": "str"}}}
+    "parent": {"cmd": "snapshot-parent", "type": "str"},
+    "revert": {"cmd": "snapshot-revert", "type": "none"}}}
