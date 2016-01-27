@@ -134,4 +134,5 @@
     "get_value": {"cmd": "secret-get-value", "type": "str"},
     "undefine": {"cmd": "secret-undefine", "type": "none"}},
   "snapshot": {
-    "create": {"cmd": "snaphost-create", "type": "none"}}}
+    "create": {"cmd": "snaphost-create", "type": "none"},
+    "create_as": {"cmd": "snapshot-create-as", "type": "none"}}}
