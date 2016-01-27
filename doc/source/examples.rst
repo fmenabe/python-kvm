@@ -9,6 +9,15 @@ Examples
     >>> host.connect('remote_host')
     >>> host = kvm.Hypervisor(host)
 
+This is for testing purpose. In general, it is probably better to use
+the ``unix.connect`` context manager (which close the connection at when
+quitting):
+
+.. code::
+
+    with unix.connect('remote_host') as host:
+        host = kvm.Hypervisor(host)
+
 Managing the hypervisor
 =======================
 Virsh version
@@ -351,15 +360,95 @@ Freecell
     >>> host.hypervisor.freecell(cellno=0)
     {'0': '1020744 KiB'}
 
-Managing domains
-================
-
-
 Managing interfaces
 ===================
+List
+~~~~
+.. code::
+
+    >>> host.list_interfaces()
+    {'br0': {'mac': '64:70:02:00:6a:95', 'state': 'active'},
+     'lo': {'mac': '00:00:00:00:00:00', 'state': 'active'}}
+
+Conf
+~~~~
+.. code::
+
+    >>> kvm.pprint(host.iface.conf('br0'))
+    {'@name': 'br0',
+     '@type': 'bridge',
+     'bridge': {'interface': {'@name': 'enp3s5',
+       '@type': 'ethernet',
+       'link': {'@speed': '1000', '@state': 'up'},
+       'mac': {'@address': '64:70:02:00:6a:95'}}},
+     'protocol': [{'@family': 'ipv4',
+       'ip': {'@address': '192.168.0.10', '@prefix': '24'}},
+      {'@family': 'ipv6',
+       'ip': {'@address': 'fe80::6670:2ff:fe00:6a95', '@prefix': '64'}}]}
 
 Managing networks
 =================
+List
+~~~~
+.. code::
+
+    >>> host.list_networks(all=True)
+    {'default': {'autostart': True, 'persistent': True, 'state': 'active'}}
+
+Conf
+~~~~
+.. code::
+
+    >>> kvm.pprint(host.net.conf('default'))
+    {'bridge': {'@delay': '0', '@name': 'virbr0', '@stp': 'on'},
+     'forward': {'@mode': 'nat',
+      'nat': {'port': {'@end': '65535', '@start': '1024'}}},
+     'ip': {'@address': '192.168.122.1',
+      '@netmask': '255.255.255.0',
+      'dhcp': {'range': {'@end': '192.168.122.254', '@start': '192.168.122.2'}}},
+     'mac': {'@address': '52:54:00:d1:7f:f7'},
+     'name': 'default',
+     'uuid': '403015c8-8339-4a66-bc37-ec794bc39e9d'}
+
+Destroy (stop)
+~~~~~~~~~~~~~~
+.. code::
+
+    >>> host.net.destroy('default')
+    (True, 'Network default destroyed', '')
+
+    >>> host.list_networks(all=True)
+    {'default': {'autostart': True, 'persistent': True, 'state': 'inactive'}}
+
+Undefine
+~~~~~~~~
+.. code::
+
+    >>> host.net.undefine('default')
+    (True, 'Network default has been undefined', '')
+
+    >>> host.list_networks(all=True)
+    {}
+
+Create
+~~~~~~
+.. code::
+
+    >>> net = {'name': 'br0', 'forward': {'@mode': 'bridge'}, 'bridge': {'@name': 'br0'}}
+    >>> with host.open('/vm/conf/networks/br0.xml', 'w') as fhandler:
+    ...    fhandler.write(kvm.to_xml('network', net))
+
+    >>> host.network.define('/vm/conf/networks/br0.xml')
+    (True, 'Network br0 defined from /vm/conf/networks/br0.xml', '')
+
+    >>> host.network.autostart('br0')
+    (True, 'Network br0 marked as autostarted', '')
+
+    >>> host.network.start('br0')
+    (True, 'Network br0 started', '')
+
+    >>> host.list_networks()
+    {'br0': {'autostart': True, 'persistent': True, 'state': 'active'}}
 
 Managing storage pools
 ======================
@@ -708,5 +797,65 @@ Undefine
 ~~~~~~~~~
 .. code::
 
-	>>> host.secret.undefine('6d14f73a-1087-7180-792d-8d80fc6b55ec')
-	(True, 'Secret 6d14f73a-1087-7180-792d-8d80fc6b55ec deleted', '')
+    >>> host.secret.undefine('6d14f73a-1087-7180-792d-8d80fc6b55ec')
+    (True, 'Secret 6d14f73a-1087-7180-792d-8d80fc6b55ec deleted', '')
+
+Managing domains
+================
+.. code::
+
+    >>> domain = {'@type': 'kvm',
+                  'name': 'trusty',
+                  'uuid': kvm.gen_uuid(),
+                  'title': 'Ubuntu 14.04',
+                  'memory': {'@unit': 'GiB', '#text': 2},
+                  'currentMemory': {'@unit': 'GiB', '#text': 2},
+                  'vcpu': {'#text': 2},
+                  'os': {'type': {'@arch': 'x86_64', '@machine': 'pc', '#text': 'hvm'},
+                         'boot': {'@dev': 'hd'},
+                         'bootmenu': {'@enable': 'no'}},
+                  'features': {'acpi': None, 'apic': None, 'pae': None},
+                  'clock': {'@offset': 'utc'},
+                  'on_poweroff': {'#text': 'destroy'},
+                  'on_reboot': {'#text': 'restart'},
+                  'on_crash': {'#text': 'restart'},
+                  'devices': {
+                    'emulator': {'#text': '/usr/bin/kvm'},
+                    'disk': [
+                        {'@type': 'volume',
+                         '@device': 'disk',
+                         'driver': {'@name': 'qemu', '@type': 'qcow2'},
+                         'source': {'@pool': 'default', '@volume': 'trusty.qcow2'},
+                         'target': {'@dev': 'vda', '@bus': 'virtio'}}
+                    ],
+                    'interface': [
+                        {'@type': 'network',
+                         'mac': {'@address': kvm.gen_mac()},
+                         'model': {'@type': 'virtio'},
+                         'source': {'@network': 'br0'}}
+                    ],
+                    'serial': {'@type': 'pty', 'target': {'@port': 0}},
+                    'console': {'@type': 'pty', 'target': {'@type': 'serial', '@port': 0}},
+                    'input': [{'@type': 'mouse', '@bus': 'ps2'},
+                              {'@type': 'keyboard', '@bus': 'ps2'}],
+                    'graphics': {'@type': 'vnc',
+                                 '@port': -1,
+                                 '@autoport': 'yes',
+                                 '@keymap': 'fr',
+                                 'listen': {'@type': 'address', '@address': '127.0.0.1'}},
+                    'video': {'model': {'@type': 'cirrus'}},
+                    'memballon': {'@type': 'virtio'}
+                  }
+                  }
+
+    >>> with host.open('/vm/conf/trusty.xml', 'w') as fhandler:
+    ...     fhandler.write(kvm.to_xml('domain', domain))
+
+    >>> host.domain.define('/vm/conf/trusty.xml')
+    (True, 'Domain trusty defined from /vm/conf/trusty.xml', '')
+
+    >>> host.domain.start('trusty')
+    (True, 'Domain trusty started', '')
+
+    >>> host.list_domains()
+    {'trusty': {'id': 2, 'state': 'running'}}
