@@ -132,4 +132,6 @@
     "conf": {"cmd": "secret-dumpxml", "type": "xml", "key": "secret"},
     "set_value": {"cmd": "secret-set-value", "type": "none"},
     "get_value": {"cmd": "secret-get-value", "type": "str"},
-    "undefine": {"cmd": "secret-undefine", "type": "none"}}}
+    "undefine": {"cmd": "secret-undefine", "type": "none"}},
+  "snapshot": {
+    "create": {"cmd": "snaphost-create", "type": "none"}}}
