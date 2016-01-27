@@ -382,7 +382,8 @@ def Hypervisor(host):
                 stdout = self.virsh('secret-list', **kwargs)
                 secrets = {}
                 for line in stdout[2:]:
-                    uuid, *usage = line.split()
+                    line = line.split()
+                    uuid, usage = line[0], line[1:]
                     secrets.setdefault(uuid, ' '.join(usage))
                 return secrets
 
