@@ -859,3 +859,116 @@ Managing domains
 
     >>> host.list_domains()
     {'trusty': {'id': 2, 'state': 'running'}}
+
+
+Snapshots
+=========
+.. code::
+
+    >>> host.snapshot.create_as('trusty')
+    (True, 'Domain snapshot 1453929671 created', '')
+
+    >>> host.snapshot.info('trusty', '1453929671')
+    {'children': 0,
+     'current': True,
+     'descendants': 0,
+     'domain': 'trusty',
+     'location': 'internal',
+     'metadata': True,
+     'name': 1453929671,
+     'parent': '-',
+     'state': 'running'}
+
+    >>> host.snapshot.create_as('trusty')
+    (True, 'Domain snapshot 1453929756 created', '')
+
+    >>> host.snapshot.info('trusty', '1453929671')
+    {'children': 1,
+     'current': False,
+     'descendants': 1,
+     'domain': 'trusty',
+     'location': 'internal',
+     'metadata': True,
+     'name': 1453929671,
+     'parent': '-',
+     'state': 'running'}
+
+    >>> host.snapshot.info('trusty', '1453929756')
+    {'children': 0,
+     'current': True,
+     'descendants': 0,
+     'domain': 'trusty',
+     'location': 'internal',
+     'metadata': True,
+     'name': 1453929756,
+     'parent': 1453929671,
+     'state': 'running'}
+
+    >>> kvm.pprint(host.snapshot.conf('trusty', '1453929756'))
+    {'creationTime': '1453929756',
+     'disks': {'disk': {'@name': 'vda', '@snapshot': 'internal'}},
+     'domain': {'@type': 'kvm',
+      'clock': {'@offset': 'utc'},
+      'currentMemory': {'#text': '2097152', '@unit': 'KiB'},
+      'devices': {'console': {'@type': 'pty',
+        'target': {'@port': '0', '@type': 'serial'}},
+       'controller': [{'@index': '0', '@type': 'usb'},
+        {'@index': '0', '@model': 'pci-root', '@type': 'pci'}],
+       'disk': {'@device': 'disk',
+        '@type': 'volume',
+        'address': {'@bus': '0x00',
+         '@domain': '0x0000',
+         '@function': '0x0',
+         '@slot': '0x04',
+         '@type': 'pci'},
+        'driver': {'@name': 'qemu', '@type': 'qcow2'},
+        'source': {'@pool': 'default', '@volume': 'trusty.qcow2'},
+        'target': {'@bus': 'virtio', '@dev': 'vda'}},
+       'emulator': '/usr/bin/kvm',
+       'graphics': {'@autoport': 'yes',
+        '@keymap': 'fr',
+        '@listen': '127.0.0.1',
+        '@port': '-1',
+        '@type': 'vnc',
+        'listen': {'@address': '127.0.0.1', '@type': 'address'}},
+       'input': [{'@bus': 'ps2', '@type': 'mouse'},
+        {'@bus': 'ps2', '@type': 'keyboard'}],
+       'interface': {'@type': 'network',
+        'address': {'@bus': '0x00',
+         '@domain': '0x0000',
+         '@function': '0x0',
+         '@slot': '0x03',
+         '@type': 'pci'},
+        'mac': {'@address': '54:52:00:cc:ba:4a'},
+        'model': {'@type': 'virtio'},
+        'source': {'@network': 'br0'}},
+       'memballoon': {'@model': 'virtio',
+        'address': {'@bus': '0x00',
+         '@domain': '0x0000',
+         '@function': '0x0',
+         '@slot': '0x05',
+         '@type': 'pci'}},
+       'serial': {'@type': 'pty', 'target': {'@port': '0'}},
+       'video': {'address': {'@bus': '0x00',
+         '@domain': '0x0000',
+         '@function': '0x0',
+         '@slot': '0x02',
+         '@type': 'pci'},
+        'model': {'@heads': '1', '@type': 'cirrus', '@vram': '16384'}}},
+      'features': {'acpi': True, 'apic': True, 'pae': True},
+      'memory': {'#text': '2097152', '@unit': 'KiB'},
+      'name': 'trusty',
+      'on_crash': 'restart',
+      'on_poweroff': 'destroy',
+      'on_reboot': 'restart',
+      'os': {'boot': {'@dev': 'hd'},
+       'bootmenu': {'@enable': 'no'},
+       'type': {'#text': 'hvm', '@arch': 'x86_64', '@machine': 'pc-i440fx-2.3'}},
+      'resource': {'partition': '/machine'},
+      'title': 'Ubuntu 14.04',
+      'uuid': 'e486003f-9f11-f7df-5ed4-cceddbf087ab',
+      'vcpu': {'#text': '2', '@placement': 'static'}},
+     'memory': {'@snapshot': 'internal'},
+     'name': '1453929756',
+     'parent': {'name': '1453929671'},
+     'state': 'running'}
