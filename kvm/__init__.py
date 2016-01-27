@@ -509,6 +509,13 @@ def __domain_stop(self, domain, timeout=30, force=False):
         signal.alarm(0)
     return [True, '', '']
 
+def __snapshot_current(self, domain, **kwargs):
+    with self._host.set_controls(parse=True):
+        result = self._host.virsh('snapshot-current', domain, **kwargs)
+        return (result[0]
+                if 'name' in kwargs
+                else from_xml(etree.fromstring('\n'.join(result)), [])['domainsnapshot'])
+
 
 class _Image(object):
     def __init__(self, host):
