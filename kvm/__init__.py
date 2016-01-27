@@ -9,6 +9,7 @@ import weakref
 import unix
 import lxml.etree as etree
 from collections import OrderedDict
+from datetime import datetime
 
 import sys
 _SELF = sys.modules[__name__]
@@ -385,6 +386,28 @@ def Hypervisor(host):
                     secrets.setdefault(uuid, ' '.join(usage))
                 return secrets
 
+        def list_snapshots(self, domain, **kwargs):
+            kwargs.pop('tree', None)
+            kwargs.pop('name', None)
+            with self.set_controls(parse=True):
+                stdout = self.virsh('snapshot-list', domain, **kwargs)
+                snapshots = {}
+                for line in stdout[2:]:
+                    line = line.split()
+                    creation_date = datetime.strptime(' '.join(line[1:4]),
+                                                      '%Y-%m-%d %H:%M:%S %z')
+                    state = line[4]
+                    if state == 'shut':
+                        state += line[5]
+                        parent = line[6] if 'parent' in kwargs else None
+                    else:
+                        parent = line[5] if 'parent' in kwargs else None
+                    snapshot = {'creation_date': creation_date, 'state': state}
+                    if parent and parent != 'null':
+                        snapshot.update(parent=parent)
+                    snapshots.setdefault(line[0], snapshot)
+                return snapshots
+
         @property
         def image(self):
             return _Image(weakref.ref(self)())
@@ -436,7 +459,6 @@ def __hypervisor_node_memory_tune(self, **kwargs):
 def __domain_time(self, domain, **kwargs):
     kwargs.pop('pretty', None)
     if not kwargs:
-        from datetime import datetime
         with self._host.set_controls(parse=True):
             time = self._host.virsh('domtime', domain, **kwargs)[0]
             return datetime.fromtimestamp(int(time.split(':')[1]))
