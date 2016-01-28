@@ -225,7 +225,7 @@ class TimeoutException(Exception):
 #
 ## Classes.
 #
-def Hypervisor(host):
+def Hypervisor(host, uri=None):
     unix.isvalid(host)
 
     try:
@@ -254,8 +254,9 @@ def Hypervisor(host):
                 for opt in self._ignore_opts:
                     kwargs.update({opt: False})
 
+            virsh_cmd = 'virsh --connect %s' % (uri or 'qemu:///session')
             with self.set_controls(options_place='after', decode='utf-8'):
-                status, stdout, stderr = self.execute('virsh', command, *args, **kwargs)
+                status, stdout, stderr = self.execute(virsh_cmd, command, *args, **kwargs)
                 # Clean stdout and stderr.
                 if stdout:
                     stdout = stdout.rstrip('\n')
