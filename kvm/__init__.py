@@ -435,6 +435,10 @@ def Hypervisor(host, uri=None):
 def __init(self, host):
     self._host = host
 
+def __hypervisor_cpu_models(self, arch):
+    with self._host.set_controls(parse=True):
+        return self._host.virsh('cpu-models', arch)
+
 def __hypervisor_sysinfo(self):
     entry = lambda value: {elt['@name']: elt['#text'] for elt in value}
 
