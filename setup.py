@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-from distutils.core import setup
-from distutils.command.install import INSTALL_SCHEMES
-
+from setuptools import setup
 
 setup (
     name='kvm',
-    version='1.0.5',
+    version='1.1.0',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
     packages=['kvm'],
@@ -14,10 +12,9 @@ setup (
     license='MIT License',
     description='An API for managing KVM host.',
     long_description=open('README.rst').read(),
-    install_requires=[
-        'unix',
-        'lxml'
-    ],
+    keywords = ['python', 'kvm', 'unix', 'virsh'],
+    install_requires=['unix', 'lxml'],
+#    entry_points={'unix': ['Hypervisor = kvm.__init__:Hypervisor']},
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Development Status :: 3 - Alpha',

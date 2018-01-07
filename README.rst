@@ -91,22 +91,3 @@ disks manipulations need *nbd* module to be loaded so it is better to use an
     # Wait for the domain to stop.
     >>> host.domain.state('guest1')
     'shut off'
-
-
-Releases notes
---------------
-1.0.5 (2015-12-03)
-~~~~~~~~~~~~~~~~~~
-    * Correct a bug when parsing XML (https://github.com/fmenabe/python-kvm/commit/8fad97e4528ca47af198cc107b9c59d8735c712d)
-
-1.0.4 (2015-07-02)
-~~~~~~~~~~~~~~~~~~
-    * Wrapper to ''virsh'' command.
-    * Each type (domain, nodedev, net, ...) has one command for listing and a property regrouping commands to apply to one element.
-    * Properties:
-        * ``hypervisor``: generic commands (``nodeinfo``, ``capabilities``, ...)
-        * ``domains``: commands for managing a domain
-        * ``nodedev``: commands for managing a node device
-        * ``net``: commands for managing a vritual network
-        * ``iface``: commands for manage an interface
-    * Transfrom XML outputs to dictionnaries.

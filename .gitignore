@@ -14,5 +14,4 @@ MANIFEST
 doc/build/*
 
 # virtualenv
-env/
-env3/
+env*/
