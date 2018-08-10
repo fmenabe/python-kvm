@@ -72,9 +72,9 @@ disks manipulations need *nbd* module to be loaded so it is better to use an
     >>> localhost.list_networks()
     {'default': {'autostart': True, 'persistent': True, 'state': 'active'}}
 
-    >>> host = unix.Remote()
+    >>> host = Remote()
     >>> host.connect('hypervisor1')
-    >>> host = kvm.Hypervisor(Linux(host)
+    >>> host = kvm.Hypervisor(Linux(host))
     >>> host.hypervisor.nodeinfo()
     {'cores_per_socket': 12,
      'cpu_frequency': '2200 MHz',
@@ -91,3 +91,9 @@ disks manipulations need *nbd* module to be loaded so it is better to use an
     # Wait for the domain to stop.
     >>> host.domain.state('guest1')
     'shut off'
+
+    # Using the context manager for the connecion.
+    >>> from unix.linux as linux, kvm
+    >>> with linux.connect('hypervisor1') as host:
+    ...   host = kvm.Hypervisor(host)
+    ...   host.hypervisor.node_info()

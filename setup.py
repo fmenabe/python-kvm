@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup (
     name='kvm',
-    version='1.1.0',
+    version='1.1.1',
     author='François Ménabé',
     author_email='francois.menabe@gmail.com',
     packages=['kvm'],
@@ -21,8 +21,7 @@ setup (
         'Intended Audience :: System Administrators',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3',
         'Operating System :: Unix',
         'Topic :: System :: Systems Administration']
 )
